@@ -99,8 +99,12 @@ public class MutterDAO {
 			try (Connection conn = DriverManager.getConnection(JDBC_URL, DB_USER, DB_PASS)) {
 				
 				
-				String sql = "SELECT USERS.ID, MUTTERS.USER_ID, USERS.NAME, MUTTERS.TEXT FROM MUTTERS JOIN USERS ON MUTTERS.USER_ID = USERS.ID WHERE MUTTERS.TEXT LIKE ? ORDER BY MUTTERS.ID DESC";
-			
+				String sql = 
+						"SELECT MUTTERS.ID, USERS.NAME, MUTTERS.TEXT FROM MUTTERS JOIN USERS ON MUTTERS.USER_ID = USERS.ID "
+						+ "WHERE MUTTERS.TEXT LIKE ？"
+						+ "ORDER BY MUTTERS.ID DESC";
+						
+				
 				PreparedStatement pStmt = conn.prepareStatement(sql);
 				
 				pStmt.setString(1, "%" + keyword + "%");
