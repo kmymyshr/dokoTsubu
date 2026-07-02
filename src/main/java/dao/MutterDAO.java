@@ -66,11 +66,11 @@ public class MutterDAO {
 			//データベース接続
 			try (Connection conn = DriverManager.getConnection(JDBC_URL, DB_USER, DB_PASS)) {
 				//INSERT文を準備
-				String sql = "INSERT INTO MUTTER(USER_ID, TEXT) VALUES(?, ?)";
+				String sql = "INSERT INTO MUTTERS(USER_ID, TEXT) VALUES(?, ?)";
 				PreparedStatement pStmt = conn.prepareStatement(sql);
 				//INSERT文中の「?」に使用する値を設定しSQLを完成
 				
-				pStmt.setString(1, mutter.getUserName());
+				pStmt.setInt(1, mutter.getUserId());
 				pStmt.setString(2, mutter.getText());
 				//INSERTを実行
 				int result = pStmt.executeUpdate();
@@ -85,4 +85,46 @@ public class MutterDAO {
 		}
 
 	
+		public List<Mutter> search(String keyword) {
+			List<Mutter> mutterList = new ArrayList<>();
+			
+		//JDBCドライバを読み込む
+			try {
+				Class.forName("org.h2.Driver");
+			} catch (ClassNotFoundException e) {
+				throw new RuntimeException(
+						"JDBCドライバのロードに失敗しました。");
+			}
+			//データベース接続
+			try (Connection conn = DriverManager.getConnection(JDBC_URL, DB_USER, DB_PASS)) {
+				
+				
+				String sql = "SELECT USERS.ID, MUTTERS.USER_ID, USERS.NAME, MUTTERS.TEXT FROM MUTTERS JOIN USERS ON MUTTERS.USER_ID = USERS.ID WHERE MUTTERS.TEXT LIKE ? ORDER BY MUTTERS.ID DESC";
+			
+				PreparedStatement pStmt = conn.prepareStatement(sql);
+				
+				pStmt.setString(1, "%" + keyword + "%");
+				
+				ResultSet rs = pStmt.executeQuery();
+				
+				while (rs.next()) {
+					int userId = rs.getInt("USER_ID");
+					String userName = rs.getString("NAME");
+					String text = rs.getString("TEXT");
+					Mutter mutter = new Mutter(userId, userName, text);
+					mutterList.add(mutter);
+				}
+			
+			
+			
+			} catch (SQLException e) {
+				e.printStackTrace();
+			
+			}
+			System.out.println("keyword = " + keyword);
+			System.out.println("mutterList = " + mutterList);
+			
+		return mutterList;	
+	
+		}				
 }
