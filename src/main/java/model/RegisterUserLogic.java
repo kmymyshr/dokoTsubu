@@ -1,5 +1,9 @@
 //ユーザ情報をデータベースに登録する。そういう処理で使う。
 
+
+
+
+
 package model;
 
 import dao.UserDAO;
