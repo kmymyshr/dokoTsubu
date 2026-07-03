@@ -27,7 +27,7 @@
 
 <a href="Logout">ログアウト</a><br>
 
-
+<%//postは投稿で使うもの。検索はデータとってくるものなのでgetにしている %>>
 <form action="SearchMutter" method="get">
     <input type="text" name="keyword" placeholder="検索キーワード">
      <input type="submit" value="検索">
@@ -36,7 +36,7 @@
 
 <p><a href="Main">更新</a></p>
 <form action="Main" method="post">
-    <input type="text" name="text">
+    <input type="text" name="text" placeholder="つぶやきを入力してください">
     <input type="submit" value="つぶやく">
 </form>
 <% if (errorMsg != null) { %>
