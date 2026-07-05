@@ -34,8 +34,13 @@ public class MutterList extends HttpServlet {
             json.append("{");
   json.append("\"id\":").append(mutter.getId()).append(",");
 json.append("\"userId\":").append(mutter.getUserId()).append(",");
-json.append("\"userName\":\"").append(mutter.getUserName()).append("\",");
-json.append("\"text\":\"").append(mutter.getText()).append("\"");
+json.append("\"userName\":\"")
+    .append(escapeJson(mutter.getUserName()))
+    .append("\",");
+
+json.append("\"text\":\"")
+    .append(escapeJson(mutter.getText()))
+    .append("\"");
             json.append("}");
 
             if (i < mutterList.size() - 1) {
@@ -47,4 +52,17 @@ json.append("\"text\":\"").append(mutter.getText()).append("\"");
 
         response.getWriter().write(json.toString());
     }
+
+private String escapeJson(String str) {
+    if (str == null) {
+        return "";
+    }
+
+    return str
+            .replace("\\", "\\\\")
+            .replace("\"", "\\\"")
+            .replace("\r", "\\r")
+            .replace("\n", "\\n");
+}
+
 }
