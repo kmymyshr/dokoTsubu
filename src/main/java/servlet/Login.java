@@ -38,6 +38,8 @@ public class Login extends HttpServlet {
 			if (dBUser != null) {
 				HttpSession session = request.getSession();
 
+				//ログイン前のセッションIDを引き継がないように更新する
+				request.changeSessionId();
 				session.setAttribute("loginUser", dBUser);
 
 				//ログイン成功時、loginLogicのメソッドlogin(user)で返ってきた
