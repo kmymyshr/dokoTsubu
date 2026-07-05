@@ -48,7 +48,7 @@
 		</p>
 	</c:if>
 
-<div id="mutterList">
+
 
 	<c:forEach var="mutter" items="${mutterList}">
 		<p>
@@ -75,7 +75,7 @@
 		</p>
 	</c:forEach>
 
-</div>
+
 
 
 	<jsp:include page="footer.jsp" />
@@ -86,19 +86,7 @@ async function loadMutterList() {
     const response = await fetch("MutterList");
     const list = await response.json();
 
-    const area =
-    document.getElementById("mutterList");
-
-area.innerHTML = "";
-
-list.forEach(m => {
-
-    area.innerHTML +=
-        `<p>${m.userName}：${m.text}</p>`;
-
-});
-
-
+    console.log(list);
 }
 
 loadMutterList();
