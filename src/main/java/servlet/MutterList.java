@@ -32,8 +32,10 @@ public class MutterList extends HttpServlet {
             Mutter mutter = mutterList.get(i);
 
             json.append("{");
-            json.append("\"userName\":\"").append(mutter.getUserName()).append("\",");
-            json.append("\"text\":\"").append(mutter.getText()).append("\"");
+  json.append("\"id\":").append(mutter.getId()).append(",");
+json.append("\"userId\":").append(mutter.getUserId()).append(",");
+json.append("\"userName\":\"").append(mutter.getUserName()).append("\",");
+json.append("\"text\":\"").append(mutter.getText()).append("\"");
             json.append("}");
 
             if (i < mutterList.size() - 1) {
