@@ -10,6 +10,7 @@
 	<h1>つぶやき編集</h1>
 	<form action="${pageContext.request.contextPath}/UpdateMutter" method="post">
 		<input type="hidden" name="mutterId" value="<c:out value='${mutter.id}' />">
+		<input type="hidden" name="version" value="<c:out value='${mutter.version}' />">
 		<input type="text" name="text" value="<c:out value='${mutter.text}' />" required>
 		<input type="submit" value="更新">
 	</form>

@@ -29,7 +29,7 @@ public class MutterDAO {
 		try (Connection conn = DriverManager.getConnection(JDBC_URL, DB_USER, DB_PASS)) {
 
 			//Mutters.USER_ID=USERS.IDを条件にJOIN,USERS.NAMEを取得するように変更
-			String sql = "SELECT MUTTERS.ID, MUTTERS.USER_ID, USERS.NAME, MUTTERS.TEXT "
+			String sql = "SELECT MUTTERS.ID, MUTTERS.USER_ID, USERS.NAME, MUTTERS.TEXT, MUTTERS.VERSION "
 					+ "FROM MUTTERS JOIN USERS ON MUTTERS.USER_ID = USERS.ID ORDER BY MUTTERS.ID DESC";
 			PreparedStatement pStmt = conn.prepareStatement(sql);
 
@@ -44,7 +44,8 @@ public class MutterDAO {
 				int userId = rs.getInt("USER_ID");
 				String userName = rs.getString("NAME");
 				String text = rs.getString("TEXT");
-				Mutter mutter = new Mutter(id, userId, userName, text);
+				int version = rs.getInt("VERSION");
+				Mutter mutter = new Mutter(id, userId, userName, text, version);
 				mutterList.add(mutter);
 			}
 		} catch (SQLException e) {
@@ -94,12 +95,14 @@ public class MutterDAO {
 			throw new RuntimeException("JDBCドライバのロードに失敗しました。", e);
 		}
 
-		String sql = "UPDATE MUTTERS SET TEXT = ? WHERE ID = ? AND USER_ID = ?";
+		String sql = "UPDATE MUTTERS SET TEXT = ?, VERSION = VERSION + 1 "
+				+ "WHERE ID = ? AND USER_ID = ? AND VERSION = ?";
 		try (Connection conn = DriverManager.getConnection(JDBC_URL, DB_USER, DB_PASS);
 				PreparedStatement pStmt = conn.prepareStatement(sql)) {
 			pStmt.setString(1, mutter.getText());
 			pStmt.setInt(2, mutter.getId());
 			pStmt.setInt(3, mutter.getUserId());
+			pStmt.setInt(4, mutter.getVersion());
 			return pStmt.executeUpdate() == 1;
 		} catch (SQLException e) {
 			e.printStackTrace();
@@ -142,7 +145,9 @@ public class MutterDAO {
 		//データベース接続
 		try (Connection conn = DriverManager.getConnection(JDBC_URL, DB_USER, DB_PASS)) {
 
-			String sql = "SELECT MUTTERS.ID, MUTTERS.USER_ID, USERS.NAME, MUTTERS.TEXT FROM MUTTERS JOIN USERS ON MUTTERS.USER_ID = USERS.ID WHERE MUTTERS.TEXT LIKE ? ORDER BY MUTTERS.ID DESC";
+			String sql = "SELECT MUTTERS.ID, MUTTERS.USER_ID, USERS.NAME, MUTTERS.TEXT, MUTTERS.VERSION "
+					+ "FROM MUTTERS JOIN USERS ON MUTTERS.USER_ID = USERS.ID "
+					+ "WHERE MUTTERS.TEXT LIKE ? ORDER BY MUTTERS.ID DESC";
 
 			PreparedStatement pStmt = conn.prepareStatement(sql);
 
@@ -155,7 +160,8 @@ public class MutterDAO {
 				int userId = rs.getInt("USER_ID");
 				String userName = rs.getString("NAME");
 				String text = rs.getString("TEXT");
-				Mutter mutter = new Mutter(id, userId, userName, text);
+				int version = rs.getInt("VERSION");
+				Mutter mutter = new Mutter(id, userId, userName, text, version);
 				mutterList.add(mutter);
 			}
 

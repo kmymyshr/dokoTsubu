@@ -67,15 +67,16 @@ public class UpdateMutter extends HttpServlet {
 		}
 
 		Integer mutterId = parseMutterId(request.getParameter("mutterId"));
+		Integer version = parseVersion(request.getParameter("version"));
 		String text = request.getParameter("text");
-		if (mutterId == null || text == null || text.isBlank()) {
+		if (mutterId == null || version == null || text == null || text.isBlank()) {
 			redirectWithError(request, response, "つぶやきを入力してください");
 			return;
 		}
 
-		Mutter mutter = new Mutter(mutterId, loginUser.getId(), loginUser.getName(), text);
+		Mutter mutter = new Mutter(mutterId, loginUser.getId(), loginUser.getName(), text, version);
 		if (!new UpdateMutterLogic().execute(mutter)) {
-			redirectWithError(request, response, "つぶやきの編集に失敗しました");
+			redirectWithError(request, response, "他の操作により更新できませんでした。最新の内容を確認してください");
 			return;
 		}
 		response.sendRedirect(request.getContextPath() + "/Main");
@@ -84,6 +85,15 @@ public class UpdateMutter extends HttpServlet {
 	private Integer parseMutterId(String value) {
 		try {
 			return Integer.valueOf(value);
+		} catch (NumberFormatException e) {
+			return null;
+		}
+	}
+
+	private Integer parseVersion(String value) {
+		try {
+			int version = Integer.parseInt(value);
+			return version >= 0 ? version : null;
 		} catch (NumberFormatException e) {
 			return null;
 		}
