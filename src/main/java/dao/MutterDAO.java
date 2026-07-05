@@ -107,6 +107,28 @@ public class MutterDAO {
 		}
 	}
 
+	/**
+	 * 指定されたユーザー自身のつぶやきを削除する。
+	 */
+	public boolean delete(int mutterId, int userId) {
+		try {
+			Class.forName("org.h2.Driver");
+		} catch (ClassNotFoundException e) {
+			throw new RuntimeException("JDBCドライバのロードに失敗しました。", e);
+		}
+
+		String sql = "DELETE FROM MUTTERS WHERE ID = ? AND USER_ID = ?";
+		try (Connection conn = DriverManager.getConnection(JDBC_URL, DB_USER, DB_PASS);
+				PreparedStatement pStmt = conn.prepareStatement(sql)) {
+			pStmt.setInt(1, mutterId);
+			pStmt.setInt(2, userId);
+			return pStmt.executeUpdate() == 1;
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return false;
+		}
+	}
+
 	public List<Mutter> search(String keyword) {
 		List<Mutter> mutterList = new ArrayList<>();
 
