@@ -1,6 +1,6 @@
 //パスワードチェック処理をユーザ情報がテーブルに存在するかチェックするように変更
 
-package servlet; 
+package servlet;
 
 import java.io.IOException;
 
@@ -20,37 +20,40 @@ import model.User;
 public class Login extends HttpServlet {
 	private static final long serialVersionUID = 1L;
 
-	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+	protected void doPost(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException {
 		request.setCharacterEncoding("UTF-8");
 
 		String name = request.getParameter("name");
 		String pass = request.getParameter("pass");
 
-		if((name != null && name.length() != 0) && (pass != null && pass.length() != 0)) {
-			
-		
-		User user = new User(name, pass);
+		if ((name != null && name.length() != 0) && (pass != null && pass.length() != 0)) {
 
-		LoginLogic loginLogic = new LoginLogic();
-		
-		
-		User findUser = loginLogic.login(user);
-		
-		if (findUser != null) {
-			HttpSession session = request.getSession();
-			session.setAttribute("loginUser", findUser);
-			
-		} else {
-			request.setAttribute("errorMsg", "パスワードが間違っているか、ユーザが未登録です");
-		}
-		
+			User user = new User(name, pass);
+
+			LoginLogic loginLogic = new LoginLogic();
+
+			User dBUser = loginLogic.login(user);
+
+			if (dBUser != null) {
+				HttpSession session = request.getSession();
+
+				session.setAttribute("loginUser", dBUser);
+
+				//ログイン成功時、loginLogicのメソッドlogin(user)で返ってきた
+				//ユーザ情報（dbUser(userのID,name,passが入っているもの)）をセッションスコープに保存
+
+			} else {
+				request.setAttribute("errorMsg", "パスワードが間違っているか、ユーザが未登録です");
+			}
+
 		} else {
 			request.setAttribute("errorMsg", "必須項目が未入力です");
 		}
-		
+
 		//boolean isLogin = loginLogic.login(user);
-		
-        //request.setAttribute("isLogin", isLogin);
+
+		//request.setAttribute("isLogin", isLogin);
 
 		//if (isLogin) {
 		//	HttpSession session = request.getSession();

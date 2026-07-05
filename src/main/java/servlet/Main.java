@@ -27,6 +27,7 @@ public class Main extends HttpServlet {
 		
 		ServletContext application = this.getServletContext();
 		
+		@SuppressWarnings("unchecked")
 		List<Mutter> mutterList = (List<Mutter>) application.getAttribute("mutterList");
 
 		
@@ -60,6 +61,8 @@ public class Main extends HttpServlet {
 		if (text != null && text.length() != 0) {
 			
 			ServletContext application = this.getServletContext();
+			
+			@SuppressWarnings("unchecked")
 			List<Mutter> mutterList = (List<Mutter>)application.getAttribute("mutterList");
 
 			

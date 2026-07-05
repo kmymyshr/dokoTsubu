@@ -10,49 +10,49 @@ import util.DBUtil;
 
 public class UserDAO {
 
-    // ユーザ情報がUSERSテーブルに存在するかチェックする
-    public User findByLogin(User user) {
-        String sql = "SELECT ID, NAME, PASS FROM USERS WHERE NAME = ? AND PASS = ?";
+	// ユーザ情報がUSERSテーブルに存在するかチェックして、ID、NAME、PASSを入れたUserオブジェクトを返す
+	public User findByName(String name) {
+		String sql = "SELECT ID, NAME, PASS FROM USERS WHERE NAME = ?";
 
-        try (Connection conn = DBUtil.getConnection();
-             PreparedStatement pStmt = conn.prepareStatement(sql)) {
+		try (Connection conn = DBUtil.getConnection();
+				PreparedStatement pStmt = conn.prepareStatement(sql)) {
 
-            pStmt.setString(1, user.getName());
-            pStmt.setString(2, user.getPass());
+			pStmt.setString(1, name);
 
-            ResultSet rs = pStmt.executeQuery();
-            		if (rs.next()) {
+			ResultSet rs = pStmt.executeQuery();
+
+			if (rs.next()) {
 				int id = rs.getInt("ID");
-				String name = rs.getString("NAME");
+				String userName = rs.getString("NAME");
 				String pass = rs.getString("PASS");
-				User findUser = new User(id, name, pass);
-				return findUser;
-            		            } else {
-				return null;
+
+				return new User(id, userName, pass);
 			}
+			return null;
+		}
 
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
+		catch (SQLException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
 
-    // ユーザを新規登録する
-    public boolean create(User user) {
-        String sql = "INSERT INTO USERS (NAME, PASS) VALUES (?, ?)";
+	// ユーザを新規登録する
+	public boolean create(User user) {
+		String sql = "INSERT INTO USERS (NAME, PASS) VALUES (?, ?)";
 
-        try (Connection conn = DBUtil.getConnection();
-             PreparedStatement pStmt = conn.prepareStatement(sql)) {
+		try (Connection conn = DBUtil.getConnection();
+				PreparedStatement pStmt = conn.prepareStatement(sql)) {
 
-            pStmt.setString(1, user.getName());
-            pStmt.setString(2, user.getPass());
+			pStmt.setString(1, user.getName());
+			pStmt.setString(2, user.getPass());
 
-            int result = pStmt.executeUpdate();
-return result == 1;         
-            
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
-        }
-    }
+			int result = pStmt.executeUpdate();
+			return result == 1;
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return false;
+		}
+	}
 }

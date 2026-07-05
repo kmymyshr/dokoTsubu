@@ -32,6 +32,6 @@
     </dependencies>
 
     <build>
-        <finalName>firstSampleRepository</finalName>
+        <finalName>dokoTsubu</finalName>
     </build>
 </project>
