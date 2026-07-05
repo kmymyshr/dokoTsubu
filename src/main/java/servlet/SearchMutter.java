@@ -55,8 +55,11 @@ public class SearchMutter extends HttpServlet {
 			request.setAttribute("errorMsg", "キーワードを入力してください");
 
 		}
+		//検索結果が自動更新で全件表示に上書きされないよう、検索中であることをJSPへ渡す
+		request.setAttribute("searchMode", true);
+
 		//フォワード先はmain.jspにする　特に画面は変えずに出す
-		RequestDispatcher dispatcher = request.getRequestDispatcher("WEB-INF/jsp/main.jsp");
+		RequestDispatcher dispatcher = request.getRequestDispatcher("/WEB-INF/jsp/main.jsp");
 		dispatcher.forward(request, response);
 	}
 }

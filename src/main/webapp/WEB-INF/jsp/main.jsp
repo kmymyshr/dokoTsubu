@@ -172,8 +172,10 @@ const loginUserId = <c:out value="${loginUser.id}" />;
     }
 }
 
+<c:if test="${not searchMode}">
 loadMutterList();
 setInterval(loadMutterList, 5000);
+</c:if>
 </script>
 
 </body>
