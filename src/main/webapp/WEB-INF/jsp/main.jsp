@@ -14,7 +14,7 @@
 	
 		<c:out value="${loginUser.id}" />
 		<c:out value="${loginUser.name}" />
-		さん、ログイン中
+		さん、ログイン中です
 
 
 
