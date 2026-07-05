@@ -84,6 +84,29 @@ public class MutterDAO {
 		return true;
 	}
 
+	/**
+	 * 指定されたユーザー自身のつぶやきを更新する。
+	 */
+	public boolean update(Mutter mutter) {
+		try {
+			Class.forName("org.h2.Driver");
+		} catch (ClassNotFoundException e) {
+			throw new RuntimeException("JDBCドライバのロードに失敗しました。", e);
+		}
+
+		String sql = "UPDATE MUTTERS SET TEXT = ? WHERE ID = ? AND USER_ID = ?";
+		try (Connection conn = DriverManager.getConnection(JDBC_URL, DB_USER, DB_PASS);
+				PreparedStatement pStmt = conn.prepareStatement(sql)) {
+			pStmt.setString(1, mutter.getText());
+			pStmt.setInt(2, mutter.getId());
+			pStmt.setInt(3, mutter.getUserId());
+			return pStmt.executeUpdate() == 1;
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return false;
+		}
+	}
+
 	public List<Mutter> search(String keyword) {
 		List<Mutter> mutterList = new ArrayList<>();
 

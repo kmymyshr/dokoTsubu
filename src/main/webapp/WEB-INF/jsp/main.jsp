@@ -58,6 +58,10 @@
 			<%--削除ボタン追加 --%>
 
 			<c:if test="${mutter.userId == loginUser.id}">
+				<form action="UpdateMutter" method="get" style="display:inline;">
+					<input type="hidden" name="mutterId" value="${mutter.id}">
+					<input type="submit" value="編集">
+				</form>
 				<form action="DeleteMutter" method="post" style="display:inline;">
 					<input type="hidden" name="mutterId" value="${mutter.id}">
 					<input type="submit" value="削除">
