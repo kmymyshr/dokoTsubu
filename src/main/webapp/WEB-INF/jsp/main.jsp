@@ -75,7 +75,22 @@
 	</c:forEach>
 
 
+
+
 	<jsp:include page="footer.jsp" />
+
+
+<script>
+async function loadMutterList() {
+    const response = await fetch("MutterList");
+    const list = await response.json();
+
+    console.log(list);
+}
+
+loadMutterList();
+</script>
+
 
 </body>
 </html>
