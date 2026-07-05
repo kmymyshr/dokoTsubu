@@ -114,11 +114,58 @@ async function loadMutterList() {
         const area = document.getElementById("mutterList");
         area.textContent = "";
 
-        list.forEach(mutter => {
-            const p = document.createElement("p");
-            p.textContent = mutter.userName + "：" + mutter.text;
-            area.appendChild(p);
-        });
+const loginUserId = <c:out value="${loginUser.id}" />;
+
+
+      list.forEach(mutter => {
+    const p = document.createElement("p");
+
+    const text = document.createTextNode(
+        mutter.userName + "：" + mutter.text + " "
+    );
+    p.appendChild(text);
+
+    if (mutter.userId === loginUserId) {
+        const updateForm = document.createElement("form");
+        updateForm.action = "UpdateMutter";
+        updateForm.method = "get";
+        updateForm.style.display = "inline";
+
+        const updateHidden = document.createElement("input");
+        updateHidden.type = "hidden";
+        updateHidden.name = "mutterId";
+        updateHidden.value = mutter.id;
+
+        const updateButton = document.createElement("input");
+        updateButton.type = "submit";
+        updateButton.value = "編集";
+
+        updateForm.appendChild(updateHidden);
+        updateForm.appendChild(updateButton);
+
+        const deleteForm = document.createElement("form");
+        deleteForm.action = "DeleteMutter";
+        deleteForm.method = "post";
+        deleteForm.style.display = "inline";
+
+        const deleteHidden = document.createElement("input");
+        deleteHidden.type = "hidden";
+        deleteHidden.name = "mutterId";
+        deleteHidden.value = mutter.id;
+
+        const deleteButton = document.createElement("input");
+        deleteButton.type = "submit";
+        deleteButton.value = "削除";
+
+        deleteForm.appendChild(deleteHidden);
+        deleteForm.appendChild(deleteButton);
+
+        p.appendChild(updateForm);
+        p.appendChild(deleteForm);
+    }
+
+    area.appendChild(p);
+});
 
     } catch (e) {
         console.error(e);
