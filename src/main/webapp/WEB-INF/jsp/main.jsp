@@ -102,26 +102,32 @@
 
 <script>
 async function loadMutterList() {
-    const response = await fetch("MutterList");
-    const list = await response.json();
+    try {
+        const response = await fetch("MutterList");
 
-    const area = document.getElementById("mutterList");
-    area.textContent = "";
+        if (!response.ok) {
+            throw new Error("通信に失敗しました: " + response.status);
+        }
 
-    list.forEach(mutter => {
-        const p = document.createElement("p");
+        const list = await response.json();
 
-        const text = document.createTextNode(
-            mutter.userName + "：" + mutter.text + " "
-        );
+        const area = document.getElementById("mutterList");
+        area.textContent = "";
 
-        p.appendChild(text);
+        list.forEach(mutter => {
+            const p = document.createElement("p");
+            p.textContent = `${mutter.userName}：${mutter.text}`;
+            area.appendChild(p);
+        });
 
-        area.appendChild(p);
-    });
+    } catch (e) {
+        console.error(e);
+    }
 }
 
 loadMutterList();
+
+setInterval(loadMutterList, 5000);
 </script>
 
 </body>
