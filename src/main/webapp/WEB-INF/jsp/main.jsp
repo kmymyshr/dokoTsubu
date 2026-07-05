@@ -116,7 +116,7 @@ async function loadMutterList() {
 
         list.forEach(mutter => {
             const p = document.createElement("p");
-            p.textContent = `${mutter.userName}：${mutter.text}`;
+            p.textContent = mutter.userName + "：" + mutter.text;
             area.appendChild(p);
         });
 
@@ -126,7 +126,6 @@ async function loadMutterList() {
 }
 
 loadMutterList();
-
 setInterval(loadMutterList, 5000);
 </script>
 
