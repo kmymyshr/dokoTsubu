@@ -32,15 +32,15 @@ public class MutterList extends HttpServlet {
             Mutter mutter = mutterList.get(i);
 
             json.append("{");
-  json.append("\"id\":").append(mutter.getId()).append(",");
-json.append("\"userId\":").append(mutter.getUserId()).append(",");
-json.append("\"userName\":\"")
-    .append(escapeJson(mutter.getUserName()))
-    .append("\",");
+            json.append("\"id\":").append(mutter.getId()).append(",");
+            json.append("\"userId\":").append(mutter.getUserId()).append(",");
+            json.append("\"userName\":\"")
+                    .append(escapeJson(mutter.getUserName()))
+                    .append("\",");
 
-json.append("\"text\":\"")
-    .append(escapeJson(mutter.getText()))
-    .append("\"");
+            json.append("\"text\":\"")
+                    .append(escapeJson(mutter.getText()))
+                    .append("\"");
             json.append("}");
 
             if (i < mutterList.size() - 1) {
@@ -53,16 +53,16 @@ json.append("\"text\":\"")
         response.getWriter().write(json.toString());
     }
 
-private String escapeJson(String str) {
-    if (str == null) {
-        return "";
-    }
+    private String escapeJson(String str) {
+        if (str == null) {
+            return "";
+        }
 
-    return str
-            .replace("\\", "\\\\")
-            .replace("\"", "\\\"")
-            .replace("\r", "\\r")
-            .replace("\n", "\\n");
-}
+        return str
+                .replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\r", "\\r")
+                .replace("\n", "\\n");
+    }
 
 }
