@@ -31,7 +31,33 @@
         </dependency>
     </dependencies>
 
-    <build>
-        <finalName>dokoTsubu</finalName>
-    </build>
+ <build>
+    <finalName>dokoTsubu</finalName>
+
+    <plugins>
+        <!-- Javaコンパイル設定 -->
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <version>3.14.1</version>
+            <configuration>
+                <release>${maven.compiler.release}</release>
+            </configuration>
+        </plugin>
+
+        <!-- WARファイル作成 -->
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-war-plugin</artifactId>
+            <version>3.5.1</version>
+        </plugin>
+
+        <!-- テスト実行 -->
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <version>3.5.6</version>
+        </plugin>
+    </plugins>
+</build>
 </project>
