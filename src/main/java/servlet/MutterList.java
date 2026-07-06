@@ -1,8 +1,10 @@
 package servlet;
 
 import java.io.IOException;
-import java.util.List;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import dto.MutterListResponse;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -10,14 +12,15 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import model.GetMutterListLogic;
-import model.Mutter;
 import model.MutterPage;
 import model.User;
+import util.ObjectMapperFactory;
 
 @WebServlet("/MutterList")
 public class MutterList extends HttpServlet {
 	private static final long serialVersionUID = 1L;
 	private static final int MAX_LIMIT = 100;
+	private static final ObjectMapper OBJECT_MAPPER = ObjectMapperFactory.getObjectMapper();
 
 	@Override
 	protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -38,9 +41,11 @@ public class MutterList extends HttpServlet {
 
 		int limit = parseLimit(request.getParameter("limit"));
 		MutterPage page = new GetMutterListLogic().execute(cursor, limit);
+		MutterListResponse responseBody = MutterListResponse.from(page);
 
-		response.setContentType("application/json; charset=UTF-8");
-		response.getWriter().write(toJson(page));
+		response.setContentType("application/json");
+		response.setCharacterEncoding("UTF-8");
+		OBJECT_MAPPER.writeValue(response.getWriter(), responseBody);
 	}
 
 	private int parseLimit(String value) {
@@ -67,46 +72,4 @@ public class MutterList extends HttpServlet {
 		}
 	}
 
-	private String toJson(MutterPage page) {
-		StringBuilder json = new StringBuilder();
-		json.append("{\"mutters\":[");
-
-		List<Mutter> mutters = page.getMutters();
-		for (int i = 0; i < mutters.size(); i++) {
-			Mutter mutter = mutters.get(i);
-			json.append("{");
-			json.append("\"id\":").append(mutter.getId()).append(",");
-			json.append("\"userId\":").append(mutter.getUserId()).append(",");
-			json.append("\"userName\":\"").append(escapeJson(mutter.getUserName())).append("\",");
-			json.append("\"text\":\"").append(escapeJson(mutter.getText())).append("\",");
-			json.append("\"version\":").append(mutter.getVersion()).append(",");
-			json.append("\"createdAt\":\"")
-					.append(escapeJson(mutter.getCreatedAt().toString())).append("\"");
-			json.append("}");
-
-			if (i < mutters.size() - 1) {
-				json.append(",");
-			}
-		}
-
-		json.append("],\"nextCursor\":");
-		if (page.getNextCursor() == null) {
-			json.append("null");
-		} else {
-			json.append(page.getNextCursor());
-		}
-		json.append(",\"hasNext\":").append(page.hasNext()).append("}");
-		return json.toString();
-	}
-
-	private String escapeJson(String value) {
-		if (value == null) {
-			return "";
-		}
-		return value
-				.replace("\\", "\\\\")
-				.replace("\"", "\\\"")
-				.replace("\r", "\\r")
-				.replace("\n", "\\n");
-	}
 }
