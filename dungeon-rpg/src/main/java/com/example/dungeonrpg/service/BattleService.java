@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class BattleService {
 
-    public BattleOutcome attack(GameState gameState) {
+    public BattleResult attack(GameState gameState) {
         Player player = gameState.getPlayer();
         Enemy enemy = gameState.getCurrentEnemy();
         if (enemy == null) {
@@ -23,11 +23,15 @@ public class BattleService {
 
         // 敵を倒した場合、敵は反撃しません。
         if (enemy.isDefeated()) {
-            player.gainExperience(enemy.getExperience());
+            int levelUpCount = player.gainExperience(enemy.getExperience());
             gameState.addBattleLog(enemy.getName() + "を倒した！ 経験値"
                     + enemy.getExperience() + "を獲得。");
+            if (levelUpCount > 0) {
+                gameState.addBattleLog("レベルが" + player.getLevel()
+                        + "になった！ HPが全回復し、能力が上昇した。");
+            }
             gameState.finishBattle();
-            return BattleOutcome.VICTORY;
+            return new BattleResult(BattleOutcome.VICTORY, levelUpCount);
         }
 
         int damageToPlayer = calculateDamage(enemy.getAttack(), player.getDefense());
@@ -37,9 +41,9 @@ public class BattleService {
 
         if (player.isDefeated()) {
             gameState.addBattleLog(player.getName() + "は力尽きた……。");
-            return BattleOutcome.DEFEAT;
+            return new BattleResult(BattleOutcome.DEFEAT, 0);
         }
-        return BattleOutcome.ONGOING;
+        return new BattleResult(BattleOutcome.ONGOING, 0);
     }
 
     private int calculateDamage(int attack, int defense) {

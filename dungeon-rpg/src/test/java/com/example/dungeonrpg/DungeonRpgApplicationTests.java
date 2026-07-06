@@ -30,4 +30,25 @@ class DungeonRpgApplicationTests {
         assertThat(gameState.getDungeonY()).isZero();
         assertThat(gameState.getDirection()).isEqualTo(Direction.NORTH);
     }
+
+    @Test
+    void townRestoresHpAndDungeonEntryResetsPosition() {
+        GameState gameState = new GameState("アレン");
+        gameState.getPlayer().takeDamage(10);
+        gameState.moveTo(3, 4);
+        gameState.changeDirection(Direction.WEST);
+
+        gameState.returnToTown();
+        gameState.getPlayer().healFully();
+
+        assertThat(gameState.isInTown()).isTrue();
+        assertThat(gameState.getPlayer().getHp()).isEqualTo(30);
+
+        gameState.enterDungeon();
+
+        assertThat(gameState.isInTown()).isFalse();
+        assertThat(gameState.getDungeonX()).isZero();
+        assertThat(gameState.getDungeonY()).isZero();
+        assertThat(gameState.getDirection()).isEqualTo(Direction.NORTH);
+    }
 }

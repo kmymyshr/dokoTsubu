@@ -15,9 +15,9 @@ class BattleServiceTests {
         Enemy enemy = new Enemy("Goblin", 18, 6, 2, 8);
         gameState.startBattle(enemy);
 
-        BattleOutcome outcome = battleService.attack(gameState);
+        BattleResult result = battleService.attack(gameState);
 
-        assertThat(outcome).isEqualTo(BattleOutcome.ONGOING);
+        assertThat(result.outcome()).isEqualTo(BattleOutcome.ONGOING);
         assertThat(enemy.getHp()).isEqualTo(12); // 8 - 2 = 6ダメージ
         assertThat(gameState.getPlayer().getHp()).isEqualTo(28); // 6 - 4 = 2ダメージ
         assertThat(gameState.getBattleLog()).hasSize(3);
@@ -28,9 +28,10 @@ class BattleServiceTests {
         GameState gameState = new GameState("アレン");
         gameState.startBattle(new Enemy("Slime", 1, 100, 100, 5));
 
-        BattleOutcome outcome = battleService.attack(gameState);
+        BattleResult result = battleService.attack(gameState);
 
-        assertThat(outcome).isEqualTo(BattleOutcome.VICTORY);
+        assertThat(result.outcome()).isEqualTo(BattleOutcome.VICTORY);
+        assertThat(result.levelUpCount()).isZero();
         assertThat(gameState.getPlayer().getExperience()).isEqualTo(5);
         assertThat(gameState.getPlayer().getHp()).isEqualTo(30); // 倒した敵は反撃しない
         assertThat(gameState.getCurrentEnemy()).isNull();
@@ -41,10 +42,29 @@ class BattleServiceTests {
         GameState gameState = new GameState("アレン");
         gameState.startBattle(new Enemy("Dragon", 100, 100, 100, 999));
 
-        BattleOutcome outcome = battleService.attack(gameState);
+        BattleResult result = battleService.attack(gameState);
 
-        assertThat(outcome).isEqualTo(BattleOutcome.DEFEAT);
+        assertThat(result.outcome()).isEqualTo(BattleOutcome.DEFEAT);
         assertThat(gameState.getPlayer().getHp()).isZero();
         assertThat(gameState.getBattleLog().getLast()).contains("力尽きた");
+    }
+
+    @Test
+    void victoryCanLevelUpPlayerAndRestoreHp() {
+        GameState gameState = new GameState("アレン");
+        gameState.getPlayer().takeDamage(10);
+        gameState.startBattle(new Enemy("Skeleton", 1, 1, 1, 12));
+
+        BattleResult result = battleService.attack(gameState);
+
+        assertThat(result.outcome()).isEqualTo(BattleOutcome.VICTORY);
+        assertThat(result.levelUpCount()).isEqualTo(1);
+        assertThat(gameState.getPlayer().getLevel()).isEqualTo(2);
+        assertThat(gameState.getPlayer().getExperience()).isEqualTo(2);
+        assertThat(gameState.getPlayer().getMaxHp()).isEqualTo(35);
+        assertThat(gameState.getPlayer().getHp()).isEqualTo(35);
+        assertThat(gameState.getPlayer().getAttack()).isEqualTo(10);
+        assertThat(gameState.getPlayer().getDefense()).isEqualTo(5);
+        assertThat(gameState.getBattleLog().getLast()).contains("レベルが2");
     }
 }

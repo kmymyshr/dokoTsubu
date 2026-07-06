@@ -18,6 +18,7 @@ public class GameState implements Serializable {
     private Direction direction;
     private Enemy currentEnemy;
     private final List<String> battleLog;
+    private boolean inTown;
 
     public GameState(String playerName) {
         this.player = new Player(playerName);
@@ -25,6 +26,7 @@ public class GameState implements Serializable {
         this.dungeonY = 0;
         this.direction = Direction.NORTH;
         this.battleLog = new ArrayList<>();
+        this.inTown = false;
     }
 
     public Player getPlayer() {
@@ -51,6 +53,10 @@ public class GameState implements Serializable {
         return Collections.unmodifiableList(battleLog);
     }
 
+    public boolean isInTown() {
+        return inTown;
+    }
+
     /** Serviceから移動結果を反映するためのメソッドです。 */
     public void moveTo(int dungeonX, int dungeonY) {
         this.dungeonX = dungeonX;
@@ -75,5 +81,17 @@ public class GameState implements Serializable {
 
     public void finishBattle() {
         this.currentEnemy = null;
+    }
+
+    public void returnToTown() {
+        this.inTown = true;
+    }
+
+    /** ダンジョンへ入るたび、入口の座標と北向きに戻します。 */
+    public void enterDungeon() {
+        this.inTown = false;
+        this.dungeonX = 0;
+        this.dungeonY = 0;
+        this.direction = Direction.NORTH;
     }
 }

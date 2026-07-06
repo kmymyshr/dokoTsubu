@@ -57,11 +57,36 @@ public class Player implements Serializable {
         hp = Math.max(0, hp - damage);
     }
 
-    public void gainExperience(int gainedExperience) {
+    /**
+     * 経験値を加算してレベルアップを判定します。
+     * 戻り値は、一度に上がったレベル数です。
+     */
+    public int gainExperience(int gainedExperience) {
         experience += gainedExperience;
+
+        int levelUpCount = 0;
+        int requiredExperience = level * 10;
+        while (experience >= requiredExperience) {
+            experience -= requiredExperience;
+            level++;
+            maxHp += 5;
+            attack += 2;
+            defense += 1;
+            hp = maxHp;
+            levelUpCount++;
+
+            // レベルが上がるたび、次に必要な経験値も増えます。
+            requiredExperience = level * 10;
+        }
+        return levelUpCount;
     }
 
     public boolean isDefeated() {
         return hp <= 0;
+    }
+
+    /** 宿屋などでHPを最大値まで回復します。 */
+    public void healFully() {
+        hp = maxHp;
     }
 }

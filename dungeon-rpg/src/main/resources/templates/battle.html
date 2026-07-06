@@ -27,7 +27,7 @@
         <button type="submit">攻撃</button>
     </form>
 
-    <section class="battle-log" aria-label="戦闘ログ">
+    <section class="battle-log" aria-label="戦闘ログ" aria-live="polite">
         <h2>戦闘ログ</h2>
         <p th:each="log : ${gameState.battleLog}" th:text="${log}">戦闘ログ</p>
     </section>

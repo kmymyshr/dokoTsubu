@@ -1,8 +1,8 @@
 :root {
     color-scheme: dark;
-    font-family: "Yu Gothic", "Hiragino Kaku Gothic ProN", sans-serif;
-    background: #111318;
-    color: #f5f1e8;
+    font-family: "MS Gothic", "Osaka-Mono", "Courier New", monospace;
+    background: #000;
+    color: #fff;
 }
 
 * {
@@ -15,38 +15,63 @@ body {
     display: grid;
     place-items: center;
     padding: 24px;
-    background:
-        radial-gradient(circle at top, rgba(125, 94, 52, 0.3), transparent 38%),
-        linear-gradient(160deg, #181b22, #090a0d);
+    color: #fff;
+    background-color: #000;
+    background-image:
+        linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+    background-size: 8px 8px;
+    line-height: 1.7;
 }
 
 .panel {
-    width: min(100%, 560px);
-    padding: 48px;
-    border: 1px solid #6e5b3c;
-    border-radius: 10px;
-    background: rgba(23, 25, 31, 0.96);
-    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.5);
+    position: relative;
+    width: min(100%, 680px);
+    padding: 34px;
+    border: 4px double #fff;
+    border-radius: 2px;
+    background: #050505;
+    box-shadow: 8px 8px 0 #333;
+}
+
+.panel::before {
+    content: "";
+    position: absolute;
+    inset: 5px;
+    border: 1px solid #555;
+    pointer-events: none;
+}
+
+.panel > * {
+    position: relative;
 }
 
 .eyebrow {
     margin: 0 0 8px;
-    color: #d5ad67;
+    color: #aaa;
     font-size: 0.78rem;
     font-weight: 700;
-    letter-spacing: 0.18em;
+    letter-spacing: 0.2em;
+}
+
+h1,
+h2,
+p {
+    overflow-wrap: anywhere;
 }
 
 h1 {
-    margin: 0 0 16px;
-    font-family: Georgia, "Yu Mincho", serif;
-    font-size: clamp(2rem, 7vw, 3.5rem);
+    margin: 0 0 18px;
+    font-size: clamp(1.75rem, 7vw, 3rem);
+    line-height: 1.3;
+    letter-spacing: 0.04em;
+    text-shadow: 3px 3px 0 #555;
 }
 
 .start-form {
     display: grid;
     gap: 12px;
-    margin-top: 32px;
+    margin-top: 28px;
 }
 
 label {
@@ -55,153 +80,208 @@ label {
 
 input {
     width: 100%;
-    padding: 13px 14px;
-    border: 1px solid #5c606b;
-    border-radius: 5px;
-    background: #0d0f13;
-    color: inherit;
+    min-height: 48px;
+    padding: 11px 13px;
+    border: 2px solid #fff;
+    border-radius: 0;
+    outline: 0;
+    background: #000;
+    color: #fff;
     font: inherit;
+}
+
+input:focus {
+    box-shadow: 0 0 0 3px #777;
 }
 
 button,
 .secondary-button {
     display: inline-block;
-    padding: 13px 20px;
-    border: 0;
-    border-radius: 5px;
-    background: #b8843f;
-    color: #111318;
+    min-height: 48px;
+    padding: 11px 18px;
+    border: 2px solid #fff;
+    border-radius: 0;
+    background: #111;
+    color: #fff;
     font: inherit;
-    font-weight: 800;
+    font-weight: 700;
     text-align: center;
     text-decoration: none;
     cursor: pointer;
+    box-shadow: 4px 4px 0 #666;
+    transition: none;
 }
 
 button:hover,
-.secondary-button:hover {
-    background: #d5ad67;
+button:focus-visible,
+.secondary-button:hover,
+.secondary-button:focus-visible {
+    outline: none;
+    background: #fff;
+    color: #000;
+}
+
+button:active,
+.secondary-button:active {
+    translate: 3px 3px;
+    box-shadow: 1px 1px 0 #666;
 }
 
 .error {
     margin: 0;
-    color: #ff8b82;
+    padding-left: 1em;
+    color: #fff;
 }
 
-.status-grid {
+.error::before {
+    content: "! ";
+}
+
+.status-grid,
+.enemy-card {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
 }
 
-.status-grid div {
+.status-grid div,
+.enemy-card div,
+.battle-player-status,
+.location {
     display: flex;
     justify-content: space-between;
-    padding: 12px 14px;
-    border-left: 3px solid #a6423a;
-    background: #0d0f13;
+    gap: 16px;
+    padding: 11px 14px;
+    border: 2px solid #fff;
+    background: #000;
 }
 
 .status-grid span,
+.enemy-card span,
+.location,
+.battle-player-status span {
+    color: #bbb;
+}
+
 .location {
-    color: #c3bbaa;
+    display: block;
+    margin-top: 16px;
+}
+
+.location p {
+    margin: 3px 0;
 }
 
 .controls {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 10px;
     margin-top: 20px;
 }
 
 .controls form,
-.controls button {
+.controls button,
+.battle-action button,
+.town-return button,
+.town-actions button {
     width: 100%;
 }
 
 .action-message {
-    min-height: 24px;
+    min-height: 28px;
     margin: 18px 0 0;
-    color: #e6c98f;
+    padding: 8px 12px;
+    border: 1px dashed #fff;
     font-weight: 700;
 }
 
+.action-message::before {
+    content: "> ";
+}
+
 .enemy-card {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-    margin-top: 28px;
-}
-
-.enemy-card div {
-    display: flex;
-    justify-content: space-between;
-    padding: 16px;
-    border: 1px solid #70403b;
-    background: #160e0e;
-}
-
-.enemy-card span {
-    color: #c99b94;
+    margin-top: 24px;
 }
 
 .battle-player-status {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 20px;
-    padding: 14px 16px;
-    background: #0d0f13;
-    border-left: 4px solid #567a54;
-}
-
-.battle-action {
     margin-top: 18px;
 }
 
-.battle-action button {
-    width: 100%;
+.battle-action,
+.town-return {
+    margin-top: 18px;
 }
 
-.battle-log {
+.battle-log,
+.dungeon-message {
     margin: 24px 0;
-    padding: 18px;
-    border: 1px dashed #51545e;
-    background: rgba(8, 9, 12, 0.5);
+    padding: 16px;
+    border: 4px double #fff;
+    background: #000;
 }
 
 .battle-log h2 {
-    margin-top: 0;
+    margin: 0 0 12px;
     font-size: 1rem;
-    color: #d5ad67;
+    letter-spacing: 0.1em;
 }
 
-.battle-log p {
-    margin: 8px 0;
+.battle-log p,
+.dungeon-message p {
+    margin: 7px 0;
 }
 
-.location {
-    margin-top: 20px;
-    padding: 12px 18px;
-    border: 1px solid #434650;
+.battle-log p::before {
+    content: "> ";
+    color: #aaa;
 }
 
-.dungeon-message {
-    margin: 28px 0;
-    padding: 20px;
-    border: 1px dashed #51545e;
-    color: #d5d1c9;
+.town-return button {
+    border-style: dashed;
+    color: #ddd;
 }
 
-@media (max-width: 560px) {
+.town-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 24px;
+}
+
+.secondary-button {
+    width: 100%;
+}
+
+@media (max-width: 600px) {
+    body {
+        display: block;
+        padding: 12px;
+    }
+
     .panel {
-        padding: 32px 24px;
+        width: 100%;
+        min-height: calc(100vh - 24px);
+        padding: 26px 20px;
+        box-shadow: 4px 4px 0 #333;
     }
 
-    .status-grid {
+    .status-grid,
+    .enemy-card,
+    .controls,
+    .town-actions {
         grid-template-columns: 1fr;
     }
 
-    .controls {
-        grid-template-columns: 1fr;
+    .battle-player-status {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 4px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    button,
+    .secondary-button {
+        transition: none;
     }
 }

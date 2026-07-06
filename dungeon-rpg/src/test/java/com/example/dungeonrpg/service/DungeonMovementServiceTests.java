@@ -6,14 +6,14 @@ import com.example.dungeonrpg.model.Direction;
 import com.example.dungeonrpg.model.GameState;
 import org.junit.jupiter.api.Test;
 
-class GameServiceTests {
-    private final GameService gameService = new GameService();
+class DungeonMovementServiceTests {
+    private final DungeonMovementService movementService = new DungeonMovementService();
 
     @Test
     void cannotMoveOutsideDungeon() {
         GameState gameState = new GameState("アレン");
 
-        MoveResult result = gameService.moveForward(gameState);
+        MovementResult result = movementService.moveForward(gameState);
 
         assertThat(result.moved()).isFalse();
         assertThat(result.message()).contains("壁");
@@ -25,8 +25,8 @@ class GameServiceTests {
     void canTurnAndMoveForward() {
         GameState gameState = new GameState("アレン");
 
-        gameService.turnRight(gameState);
-        MoveResult result = gameService.moveForward(gameState);
+        movementService.turnRight(gameState);
+        MovementResult result = movementService.moveForward(gameState);
 
         assertThat(result.moved()).isTrue();
         assertThat(gameState.getDirection()).isEqualTo(Direction.EAST);
@@ -38,10 +38,10 @@ class GameServiceTests {
     void leftAndRightTurnsFollowCompassOrder() {
         GameState gameState = new GameState("アレン");
 
-        gameService.turnLeft(gameState);
+        movementService.turnLeft(gameState);
         assertThat(gameState.getDirection()).isEqualTo(Direction.WEST);
 
-        gameService.turnRight(gameState);
+        movementService.turnRight(gameState);
         assertThat(gameState.getDirection()).isEqualTo(Direction.NORTH);
     }
 }

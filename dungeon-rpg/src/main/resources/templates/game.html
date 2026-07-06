@@ -24,7 +24,8 @@
         <p>向き：<strong th:text="${gameState.direction.displayName}">北</strong></p>
     </div>
 
-    <p class="action-message" th:if="${actionMessage}" th:text="${actionMessage}"></p>
+    <p class="action-message" role="status" aria-live="polite"
+       th:if="${actionMessage}" th:text="${actionMessage}"></p>
 
     <section class="controls" aria-label="移動操作">
         <form th:action="@{/game/turn-left}" method="post">
@@ -37,6 +38,10 @@
             <button type="submit">右を向く</button>
         </form>
     </section>
+
+    <form class="town-return" th:action="@{/town/return}" method="post">
+        <button type="submit">街に戻る</button>
+    </form>
 
     <div class="dungeon-message">
         <p>冷たい風が、迷宮の奥から吹いてくる。</p>

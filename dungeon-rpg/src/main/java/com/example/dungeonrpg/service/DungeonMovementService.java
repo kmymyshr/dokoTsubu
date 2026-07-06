@@ -4,13 +4,12 @@ import com.example.dungeonrpg.model.Direction;
 import com.example.dungeonrpg.model.GameState;
 import org.springframework.stereotype.Service;
 
-/** ダンジョン内の移動ルールを担当するクラスです。 */
+/** ダンジョンの境界判定と方向転換を担当します。 */
 @Service
-public class GameService {
+public class DungeonMovementService {
     public static final int DUNGEON_SIZE = 5;
 
-    /** 現在向いている方向へ1マス進みます。 */
-    public MoveResult moveForward(GameState gameState) {
+    public MovementResult moveForward(GameState gameState) {
         int nextX = gameState.getDungeonX();
         int nextY = gameState.getDungeonY();
 
@@ -21,17 +20,14 @@ public class GameService {
             case WEST -> nextX--;
         }
 
-        // 座標は0～4です。範囲外なら状態を変更しません。
-        if (nextX < 0 || nextX >= DUNGEON_SIZE
-                || nextY < 0 || nextY >= DUNGEON_SIZE) {
-            return new MoveResult(false, "壁があり、これ以上進めません。");
+        if (isOutsideDungeon(nextX, nextY)) {
+            return new MovementResult(false, "壁があり、これ以上進めません。");
         }
 
         gameState.moveTo(nextX, nextY);
-        return new MoveResult(true, "前へ1マス進みました。");
+        return new MovementResult(true, "前へ1マス進みました。");
     }
 
-    /** プレイヤーを左へ90度回転させます。 */
     public String turnLeft(GameState gameState) {
         Direction nextDirection = switch (gameState.getDirection()) {
             case NORTH -> Direction.WEST;
@@ -43,7 +39,6 @@ public class GameService {
         return "左を向きました。";
     }
 
-    /** プレイヤーを右へ90度回転させます。 */
     public String turnRight(GameState gameState) {
         Direction nextDirection = switch (gameState.getDirection()) {
             case NORTH -> Direction.EAST;
@@ -53,5 +48,9 @@ public class GameService {
         };
         gameState.changeDirection(nextDirection);
         return "右を向きました。";
+    }
+
+    private boolean isOutsideDungeon(int x, int y) {
+        return x < 0 || x >= DUNGEON_SIZE || y < 0 || y >= DUNGEON_SIZE;
     }
 }
