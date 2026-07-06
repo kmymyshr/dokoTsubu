@@ -9,7 +9,7 @@
 <title>どこつぶ</title>
 </head>
 <body>
-<h1>どこつぶへようこそ</h1>
+<h1>どこつぶへようこそ!</h1>
 
 
 <form action="Login" method="post">
