@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Game Over | Dungeon RPG</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<main class="panel game-over-panel">
+    <p class="eyebrow">GAME OVER</p>
+    <h1><span th:text="${gameState.player.name}">冒険者</span>は力尽きた</h1>
+
+    <section class="battle-log" aria-label="最後の戦闘ログ">
+        <h2>戦闘ログ</h2>
+        <p th:each="log : ${gameState.battleLog}" th:text="${log}">戦闘ログ</p>
+    </section>
+
+    <a class="secondary-button" th:href="@{/}">もう一度挑戦する</a>
+</main>
+</body>
+</html>
