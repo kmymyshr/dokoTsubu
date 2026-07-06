@@ -16,7 +16,8 @@ public class MutterDAO {
 	private final String DB_USER = "sa";
 	private final String DB_PASS = "";
 
-	public List<Mutter> findAll() {
+	/** 最新のつぶやきを指定件数だけ取得する。 */
+	public List<Mutter> findLatest(int limit) {
 		List<Mutter> mutterList = new ArrayList<>();
 		//JDBCドライバを読み込む
 		try {
@@ -29,9 +30,11 @@ public class MutterDAO {
 		try (Connection conn = DriverManager.getConnection(JDBC_URL, DB_USER, DB_PASS)) {
 
 			//Mutters.USER_ID=USERS.IDを条件にJOIN,USERS.NAMEを取得するように変更
-			String sql = "SELECT MUTTERS.ID, MUTTERS.USER_ID, USERS.NAME, MUTTERS.TEXT, MUTTERS.VERSION "
-					+ "FROM MUTTERS JOIN USERS ON MUTTERS.USER_ID = USERS.ID ORDER BY MUTTERS.ID DESC";
+			String sql = "SELECT m.ID, m.USER_ID, u.NAME, m.TEXT, m.VERSION, m.CREATED_AT "
+					+ "FROM MUTTERS m JOIN USERS u ON m.USER_ID = u.ID "
+					+ "ORDER BY m.ID DESC LIMIT ?";
 			PreparedStatement pStmt = conn.prepareStatement(sql);
+			pStmt.setInt(1, limit);
 
 			//SELECTを実行し、結果表を取得
 			ResultSet rs = pStmt.executeQuery();
@@ -45,7 +48,8 @@ public class MutterDAO {
 				String userName = rs.getString("NAME");
 				String text = rs.getString("TEXT");
 				int version = rs.getInt("VERSION");
-				Mutter mutter = new Mutter(id, userId, userName, text, version);
+				java.time.LocalDateTime createdAt = rs.getTimestamp("CREATED_AT").toLocalDateTime();
+				Mutter mutter = new Mutter(id, userId, userName, text, version, createdAt);
 				mutterList.add(mutter);
 			}
 		} catch (SQLException e) {
@@ -53,6 +57,47 @@ public class MutterDAO {
 			return null;
 		}
 		return mutterList;
+	}
+
+	/** 指定したIDより古いつぶやきを指定件数だけ取得する。 */
+	public List<Mutter> findByCursor(int cursor, int limit) {
+		List<Mutter> mutterList = new ArrayList<>();
+		loadDriver();
+
+		String sql = "SELECT m.ID, m.USER_ID, u.NAME, m.TEXT, m.VERSION, m.CREATED_AT "
+				+ "FROM MUTTERS m JOIN USERS u ON m.USER_ID = u.ID "
+				+ "WHERE m.ID < ? ORDER BY m.ID DESC LIMIT ?";
+		try (Connection conn = DriverManager.getConnection(JDBC_URL, DB_USER, DB_PASS);
+				PreparedStatement pStmt = conn.prepareStatement(sql)) {
+			pStmt.setInt(1, cursor);
+			pStmt.setInt(2, limit);
+
+			ResultSet rs = pStmt.executeQuery();
+			while (rs.next()) {
+				mutterList.add(toMutter(rs));
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return null;
+		}
+		return mutterList;
+	}
+
+	/** 編集画面で使うつぶやきをIDで1件取得する。 */
+	public Mutter findById(int mutterId) {
+		loadDriver();
+
+		String sql = "SELECT m.ID, m.USER_ID, u.NAME, m.TEXT, m.VERSION, m.CREATED_AT "
+				+ "FROM MUTTERS m JOIN USERS u ON m.USER_ID = u.ID WHERE m.ID = ?";
+		try (Connection conn = DriverManager.getConnection(JDBC_URL, DB_USER, DB_PASS);
+				PreparedStatement pStmt = conn.prepareStatement(sql)) {
+			pStmt.setInt(1, mutterId);
+			ResultSet rs = pStmt.executeQuery();
+			return rs.next() ? toMutter(rs) : null;
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return null;
+		}
 	}
 
 	public boolean create(Mutter mutter) {
@@ -145,9 +190,9 @@ public class MutterDAO {
 		//データベース接続
 		try (Connection conn = DriverManager.getConnection(JDBC_URL, DB_USER, DB_PASS)) {
 
-			String sql = "SELECT MUTTERS.ID, MUTTERS.USER_ID, USERS.NAME, MUTTERS.TEXT, MUTTERS.VERSION "
-					+ "FROM MUTTERS JOIN USERS ON MUTTERS.USER_ID = USERS.ID "
-					+ "WHERE MUTTERS.TEXT LIKE ? ORDER BY MUTTERS.ID DESC";
+			String sql = "SELECT m.ID, m.USER_ID, u.NAME, m.TEXT, m.VERSION, m.CREATED_AT "
+					+ "FROM MUTTERS m JOIN USERS u ON m.USER_ID = u.ID "
+					+ "WHERE m.TEXT LIKE ? ORDER BY m.ID DESC";
 
 			PreparedStatement pStmt = conn.prepareStatement(sql);
 
@@ -161,7 +206,8 @@ public class MutterDAO {
 				String userName = rs.getString("NAME");
 				String text = rs.getString("TEXT");
 				int version = rs.getInt("VERSION");
-				Mutter mutter = new Mutter(id, userId, userName, text, version);
+				java.time.LocalDateTime createdAt = rs.getTimestamp("CREATED_AT").toLocalDateTime();
+				Mutter mutter = new Mutter(id, userId, userName, text, version, createdAt);
 				mutterList.add(mutter);
 			}
 
@@ -172,5 +218,23 @@ public class MutterDAO {
 
 		return mutterList;
 
+	}
+
+	private void loadDriver() {
+		try {
+			Class.forName("org.h2.Driver");
+		} catch (ClassNotFoundException e) {
+			throw new RuntimeException("JDBCドライバのロードに失敗しました。", e);
+		}
+	}
+
+	private Mutter toMutter(ResultSet rs) throws SQLException {
+		int id = rs.getInt("ID");
+		int userId = rs.getInt("USER_ID");
+		String userName = rs.getString("NAME");
+		String text = rs.getString("TEXT");
+		int version = rs.getInt("VERSION");
+		java.time.LocalDateTime createdAt = rs.getTimestamp("CREATED_AT").toLocalDateTime();
+		return new Mutter(id, userId, userName, text, version, createdAt);
 	}
 }

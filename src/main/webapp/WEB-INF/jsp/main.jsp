@@ -61,6 +61,7 @@
         <c:out value="${mutter.userName}" />
         ：
         <c:out value="${mutter.text}" />
+		<small>（<c:out value="${mutter.createdAt}" />）</small>
 
         <c:if test="${mutter.userId == loginUser.id}">
 
@@ -98,36 +99,42 @@
 
 </div>
 
+<c:if test="${not searchMode}">
+    <button id="loadMoreButton" type="button" style="display:none;">さらに読み込む</button>
+</c:if>
+
 <jsp:include page="footer.jsp"/>
 
 <script>
-async function loadMutterList() {
-    try {
-        const response = await fetch("MutterList");
+const pageLimit = 20;
+let nextCursor = null;
+let hasNext = false;
+let olderPagesLoaded = false;
 
-        if (!response.ok) {
-            throw new Error("通信に失敗しました: " + response.status);
-        }
+async function fetchMutterPage(cursor) {
+    const url = new URL("${pageContext.request.contextPath}/MutterList", window.location.origin);
+    url.searchParams.set("limit", pageLimit);
+    if (cursor !== null) {
+        url.searchParams.set("cursor", cursor);
+    }
 
-        const list = await response.json();
+    const response = await fetch(url);
+    if (!response.ok) {
+        throw new Error("通信に失敗しました: " + response.status);
+    }
+    return response.json();
+}
 
-        const area = document.getElementById("mutterList");
-        area.textContent = "";
-
-const loginUserId = <c:out value="${loginUser.id}" />;
-
-
-      list.forEach(mutter => {
+function createMutterElement(mutter, loginUserId) {
     const p = document.createElement("p");
-
-    const text = document.createTextNode(
-        mutter.userName + "：" + mutter.text + " "
-    );
-    p.appendChild(text);
+    const createdAt = new Date(mutter.createdAt).toLocaleString("ja-JP");
+    p.appendChild(document.createTextNode(
+        mutter.userName + "：" + mutter.text + " （" + createdAt + "） "
+    ));
 
     if (mutter.userId === loginUserId) {
         const updateForm = document.createElement("form");
-        updateForm.action = "UpdateMutter";
+        updateForm.action = "${pageContext.request.contextPath}/UpdateMutter";
         updateForm.method = "get";
         updateForm.style.display = "inline";
 
@@ -144,7 +151,7 @@ const loginUserId = <c:out value="${loginUser.id}" />;
         updateForm.appendChild(updateButton);
 
         const deleteForm = document.createElement("form");
-        deleteForm.action = "DeleteMutter";
+        deleteForm.action = "${pageContext.request.contextPath}/DeleteMutter";
         deleteForm.method = "post";
         deleteForm.style.display = "inline";
 
@@ -159,22 +166,68 @@ const loginUserId = <c:out value="${loginUser.id}" />;
 
         deleteForm.appendChild(deleteHidden);
         deleteForm.appendChild(deleteButton);
-
         p.appendChild(updateForm);
         p.appendChild(deleteForm);
     }
 
-    area.appendChild(p);
-});
+    return p;
+}
 
+function renderMutterPage(mutters, append) {
+    const area = document.getElementById("mutterList");
+    const loginUserId = <c:out value="${loginUser.id}" />;
+    if (!append) {
+        area.textContent = "";
+    }
+    mutters.forEach(mutter => area.appendChild(createMutterElement(mutter, loginUserId)));
+}
+
+function updateLoadMoreButton() {
+    const button = document.getElementById("loadMoreButton");
+    if (button) {
+        button.style.display = hasNext ? "inline-block" : "none";
+        button.disabled = false;
+    }
+}
+
+async function loadLatestMutterList() {
+    try {
+        const page = await fetchMutterPage(null);
+        renderMutterPage(page.mutters, false);
+        nextCursor = page.nextCursor;
+        hasNext = page.hasNext;
+        updateLoadMoreButton();
     } catch (e) {
         console.error(e);
     }
 }
 
 <c:if test="${not searchMode}">
-loadMutterList();
-setInterval(loadMutterList, 5000);
+document.getElementById("loadMoreButton").addEventListener("click", async event => {
+    if (!hasNext || nextCursor === null) {
+        return;
+    }
+
+    event.currentTarget.disabled = true;
+    try {
+        const page = await fetchMutterPage(nextCursor);
+        renderMutterPage(page.mutters, true);
+        nextCursor = page.nextCursor;
+        hasNext = page.hasNext;
+        olderPagesLoaded = true;
+        updateLoadMoreButton();
+    } catch (e) {
+        console.error(e);
+        event.currentTarget.disabled = false;
+    }
+});
+
+loadLatestMutterList();
+setInterval(() => {
+    if (!olderPagesLoaded) {
+        loadLatestMutterList();
+    }
+}, 5000);
 </c:if>
 </script>
 

@@ -1,8 +1,6 @@
 package servlet;
 
 import java.io.IOException;
-import java.util.List;
-
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -10,7 +8,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import model.GetMutterListLogic;
+import model.GetMutterLogic;
 import model.Mutter;
 import model.UpdateMutterLogic;
 import model.User;
@@ -35,18 +33,9 @@ public class UpdateMutter extends HttpServlet {
 			return;
 		}
 
-		List<Mutter> mutterList = new GetMutterListLogic().execute();
-		Mutter targetMutter = null;
-		if (mutterList != null) {
-			for (Mutter mutter : mutterList) {
-				if (mutter.getId() == mutterId && mutter.getUserId() == loginUser.getId()) {
-					targetMutter = mutter;
-					break;
-				}
-			}
-		}
+		Mutter targetMutter = new GetMutterLogic().execute(mutterId);
 
-		if (targetMutter == null) {
+		if (targetMutter == null || targetMutter.getUserId() != loginUser.getId()) {
 			redirectWithError(request, response, "編集できるつぶやきが見つかりません");
 			return;
 		}

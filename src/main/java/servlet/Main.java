@@ -39,9 +39,7 @@ public class Main extends HttpServlet {
 		
 		GetMutterListLogic getMutterListLogic = new GetMutterListLogic();
 		List<Mutter> mutterList = getMutterListLogic.execute();
-		//直接DAOを呼ばず、logicクラスを経由してデータを取得するように変更
-		//MutterDAO dao = new MutterDAO();
-		//List<Mutter> mutterList = dao.findAll();
+		//直接DAOを呼ばず、Logicを経由して最新20件を取得する
 
 		request.setAttribute("mutterList", mutterList);
 
