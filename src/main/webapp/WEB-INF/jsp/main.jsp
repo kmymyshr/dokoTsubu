@@ -1,235 +1,72 @@
-<%@ page language="java" contentType="text/html; charset=UTF-8"
-    pageEncoding="UTF-8"%>
-<%@ taglib prefix="c" uri="jakarta.tags.core"%>
-
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <!DOCTYPE html>
-<html>
+<html lang="ja">
 <head>
-<meta charset="UTF-8">
-<title>どこつぶ</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>どこつぶ</title>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/main.css">
 </head>
-<body>
+<body data-context-path="${pageContext.request.contextPath}">
+<header class="page-header">
+    <div>
+        <h1>どこつぶ</h1>
+        <p id="loginStatus">ログイン情報を読み込み中です</p>
+    </div>
+    <a href="${pageContext.request.contextPath}/Logout">ログアウト</a>
+</header>
 
-<h1>どこつぶメイン</h1>
+<main>
+    <p id="message" class="message" role="status" aria-live="polite" hidden></p>
 
-<p>
-    <c:out value="${loginUser.id}" />
-    <c:out value="${loginUser.name}" />
-    さん、ログイン中です
-</p>
+    <section aria-labelledby="postHeading">
+        <h2 id="postHeading">つぶやく</h2>
+        <form id="postForm">
+            <label for="postText">本文</label>
+            <div class="form-row">
+                <input id="postText" name="text" maxlength="255" required
+                       placeholder="つぶやきを入力してください" autocomplete="off">
+                <button type="submit">投稿</button>
+            </div>
+        </form>
+    </section>
 
-<a href="Logout">ログアウト</a>
+    <section aria-labelledby="searchHeading">
+        <h2 id="searchHeading">検索</h2>
+        <form id="searchForm" class="form-row">
+            <label class="visually-hidden" for="keyword">検索キーワード</label>
+            <input id="keyword" name="keyword" placeholder="検索キーワード">
+            <button type="submit">検索</button>
+            <button id="clearSearchButton" type="button">解除</button>
+        </form>
+    </section>
 
-<br><br>
+    <section aria-labelledby="listHeading">
+        <div class="section-heading">
+            <h2 id="listHeading">つぶやき一覧</h2>
+            <button id="refreshButton" type="button">更新</button>
+        </div>
+        <div id="mutterList" aria-live="polite" aria-busy="true"></div>
+        <p id="emptyMessage" hidden>つぶやきがありません。</p>
+        <button id="loadMoreButton" type="button" hidden>さらに読み込む</button>
+    </section>
+</main>
 
-<form action="SearchMutter" method="get">
-    <input type="text"
-           name="keyword"
-           placeholder="検索キーワード">
+<dialog id="editDialog">
+    <form id="editForm">
+        <h2>つぶやきを編集</h2>
+        <input id="editId" type="hidden">
+        <input id="editVersion" type="hidden">
+        <label for="editText">本文</label>
+        <input id="editText" maxlength="255" required>
+        <div class="dialog-actions">
+            <button id="cancelEditButton" type="button">キャンセル</button>
+            <button type="submit">更新</button>
+        </div>
+    </form>
+</dialog>
 
-    <input type="submit"
-           value="検索">
-</form>
-
-<p>
-    <a href="Main">更新</a>
-</p>
-
-<form action="Main" method="post">
-    <input type="text"
-           name="text"
-           placeholder="つぶやきを入力してください">
-
-    <input type="submit"
-           value="つぶやく">
-</form>
-
-<c:if test="${not empty errorMsg}">
-    <p>
-        <c:out value="${errorMsg}" />
-    </p>
-</c:if>
-
-<hr>
-
-<div id="mutterList">
-
-<c:forEach var="mutter" items="${mutterList}">
-
-    <p>
-
-        <c:out value="${mutter.userName}" />
-        ：
-        <c:out value="${mutter.text}" />
-		<small>（<c:out value="${mutter.createdAt}" />）</small>
-
-        <c:if test="${mutter.userId == loginUser.id}">
-
-            <form action="UpdateMutter"
-                  method="get"
-                  style="display:inline;">
-
-                <input type="hidden"
-                       name="mutterId"
-                       value="${mutter.id}">
-
-                <input type="submit"
-                       value="編集">
-
-            </form>
-
-            <form action="DeleteMutter"
-                  method="post"
-                  style="display:inline;">
-
-                <input type="hidden"
-                       name="mutterId"
-                       value="${mutter.id}">
-
-                <input type="submit"
-                       value="削除">
-
-            </form>
-
-        </c:if>
-
-    </p>
-
-</c:forEach>
-
-</div>
-
-<c:if test="${not searchMode}">
-    <button id="loadMoreButton" type="button" style="display:none;">さらに読み込む</button>
-</c:if>
-
-<jsp:include page="footer.jsp"/>
-
-<script>
-const pageLimit = 20;
-let nextCursor = null;
-let hasNext = false;
-let olderPagesLoaded = false;
-
-async function fetchMutterPage(cursor) {
-    const url = new URL("${pageContext.request.contextPath}/MutterList", window.location.origin);
-    url.searchParams.set("limit", pageLimit);
-    if (cursor !== null) {
-        url.searchParams.set("cursor", cursor);
-    }
-
-    const response = await fetch(url);
-    if (!response.ok) {
-        throw new Error("通信に失敗しました: " + response.status);
-    }
-    return response.json();
-}
-
-function createMutterElement(mutter, loginUserId) {
-    const p = document.createElement("p");
-    const createdAt = new Date(mutter.createdAt).toLocaleString("ja-JP");
-    p.appendChild(document.createTextNode(
-        mutter.userName + "：" + mutter.text + " （" + createdAt + "） "
-    ));
-
-    if (mutter.userId === loginUserId) {
-        const updateForm = document.createElement("form");
-        updateForm.action = "${pageContext.request.contextPath}/UpdateMutter";
-        updateForm.method = "get";
-        updateForm.style.display = "inline";
-
-        const updateHidden = document.createElement("input");
-        updateHidden.type = "hidden";
-        updateHidden.name = "mutterId";
-        updateHidden.value = mutter.id;
-
-        const updateButton = document.createElement("input");
-        updateButton.type = "submit";
-        updateButton.value = "編集";
-
-        updateForm.appendChild(updateHidden);
-        updateForm.appendChild(updateButton);
-
-        const deleteForm = document.createElement("form");
-        deleteForm.action = "${pageContext.request.contextPath}/DeleteMutter";
-        deleteForm.method = "post";
-        deleteForm.style.display = "inline";
-
-        const deleteHidden = document.createElement("input");
-        deleteHidden.type = "hidden";
-        deleteHidden.name = "mutterId";
-        deleteHidden.value = mutter.id;
-
-        const deleteButton = document.createElement("input");
-        deleteButton.type = "submit";
-        deleteButton.value = "削除";
-
-        deleteForm.appendChild(deleteHidden);
-        deleteForm.appendChild(deleteButton);
-        p.appendChild(updateForm);
-        p.appendChild(deleteForm);
-    }
-
-    return p;
-}
-
-function renderMutterPage(mutters, append) {
-    const area = document.getElementById("mutterList");
-    const loginUserId = <c:out value="${loginUser.id}" />;
-    if (!append) {
-        area.textContent = "";
-    }
-    mutters.forEach(mutter => area.appendChild(createMutterElement(mutter, loginUserId)));
-}
-
-function updateLoadMoreButton() {
-    const button = document.getElementById("loadMoreButton");
-    if (button) {
-        button.style.display = hasNext ? "inline-block" : "none";
-        button.disabled = false;
-    }
-}
-
-async function loadLatestMutterList() {
-    try {
-        const page = await fetchMutterPage(null);
-        renderMutterPage(page.mutters, false);
-        nextCursor = page.nextCursor;
-        hasNext = page.hasNext;
-        updateLoadMoreButton();
-    } catch (e) {
-        console.error(e);
-    }
-}
-
-<c:if test="${not searchMode}">
-document.getElementById("loadMoreButton").addEventListener("click", async event => {
-    if (!hasNext || nextCursor === null) {
-        return;
-    }
-
-    event.currentTarget.disabled = true;
-    try {
-        const page = await fetchMutterPage(nextCursor);
-        renderMutterPage(page.mutters, true);
-        nextCursor = page.nextCursor;
-        hasNext = page.hasNext;
-        olderPagesLoaded = true;
-        updateLoadMoreButton();
-    } catch (e) {
-        console.error(e);
-        event.currentTarget.disabled = false;
-    }
-});
-
-loadLatestMutterList();
-setInterval(() => {
-    if (!olderPagesLoaded) {
-        loadLatestMutterList();
-    }
-}, 5000);
-</c:if>
-</script>
-
+<footer><p>どこつぶ</p></footer>
+<script src="${pageContext.request.contextPath}/js/main.js" defer></script>
 </body>
 </html>
