@@ -18,6 +18,6 @@ public record MutterListResponse(
 		return new MutterListResponse(
 				mutters,
 				page.getNextCursor(),
-				page.hasNext());
+				page.isHasNext());
 	}
 }

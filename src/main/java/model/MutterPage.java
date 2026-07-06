@@ -22,7 +22,7 @@ public class MutterPage {
 		return nextCursor;
 	}
 
-	public boolean hasNext() {
+	public boolean isHasNext() {
 		return hasNext;
 	}
 }
