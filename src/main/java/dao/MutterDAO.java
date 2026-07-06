@@ -83,6 +83,31 @@ public class MutterDAO {
 		return mutterList;
 	}
 
+		/** REST API用に、検索条件とカーソルを同時に適用して取得する。 */
+	public List<Mutter> findPage(String keyword, Integer cursor, int limit) {
+		List<Mutter> mutterList = new ArrayList<>();
+		loadDriver();
+		StringBuilder sql = new StringBuilder(
+				"SELECT m.ID, m.USER_ID, u.NAME, m.TEXT, m.VERSION, m.CREATED_AT "
+				+ "FROM MUTTERS m JOIN USERS u ON m.USER_ID = u.ID WHERE 1 = 1 ");
+		if (keyword != null) sql.append("AND m.TEXT LIKE ? ");
+		if (cursor != null) sql.append("AND m.ID < ? ");
+		sql.append("ORDER BY m.ID DESC LIMIT ?");
+		try (Connection conn = DriverManager.getConnection(JDBC_URL, DB_USER, DB_PASS);
+				PreparedStatement pStmt = conn.prepareStatement(sql.toString())) {
+			int index = 1;
+			if (keyword != null) pStmt.setString(index++, "%" + keyword + "%");
+			if (cursor != null) pStmt.setInt(index++, cursor);
+			pStmt.setInt(index, limit);
+			try (ResultSet rs = pStmt.executeQuery()) {
+				while (rs.next()) mutterList.add(toMutter(rs));
+			}
+		} catch (SQLException e) {
+			throw new RuntimeException("つぶやき一覧の取得に失敗しました。", e);
+		}
+		return mutterList;
+	}
+
 	/** 編集画面で使うつぶやきをIDで1件取得する。 */
 	public Mutter findById(int mutterId) {
 		loadDriver();
@@ -98,6 +123,27 @@ public class MutterDAO {
 			e.printStackTrace();
 			return null;
 		}
+	}
+
+		/** 作成したつぶやきを採番済みIDを含めて返す。 */
+	public Mutter createAndReturn(Mutter mutter) {
+		loadDriver();
+		String sql = "INSERT INTO MUTTERS(USER_ID, TEXT) VALUES(?, ?)";
+		int generatedId;
+		try (Connection conn = DriverManager.getConnection(JDBC_URL, DB_USER, DB_PASS);
+				PreparedStatement pStmt = conn.prepareStatement(
+						sql, java.sql.Statement.RETURN_GENERATED_KEYS)) {
+			pStmt.setInt(1, mutter.getUserId());
+			pStmt.setString(2, mutter.getText());
+			if (pStmt.executeUpdate() != 1) return null;
+			try (ResultSet keys = pStmt.getGeneratedKeys()) {
+				if (!keys.next()) return null;
+				generatedId = keys.getInt(1);
+			}
+		} catch (SQLException e) {
+			throw new RuntimeException("つぶやきの作成に失敗しました。", e);
+		}
+		return findById(generatedId);
 	}
 
 	public boolean create(Mutter mutter) {
