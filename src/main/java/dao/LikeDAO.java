@@ -9,6 +9,10 @@ import util.DBUtil;
 
 public class LikeDAO {
 
+    /**
+     * つぶやきに対するいいねを切り替える。
+     * すでにいいね済みなら削除し、まだなら追加する。
+     */
     public boolean toggleLike(int mutterId, int userId) {
         ensureSchema();
         try (Connection conn = DBUtil.getConnection()) {

@@ -4,7 +4,8 @@ import dao.FollowDAO;
 
 public class FollowUserLogic {
     /**
-     * 指定したユーザーをフォロー/アンフォローする。
+     * フォロー/アンフォローの処理をまとめて担当するクラスです。
+     * サーブレット側ではこのクラスを呼ぶだけで処理を分かりやすくできます。
      */
     public boolean execute(int followerId, int followeeId) {
         return new FollowDAO().toggleFollow(followerId, followeeId);

@@ -31,7 +31,8 @@ public class FollowUser extends HttpServlet {
             return;
         }
 
-        // リクエストボディは JSON で送られてくるためパラメータではなくボディを読み取る
+        // リクエストボディは JSON で送られてくるため、パラメータではなくボディを読み取る。
+        // 画面からの操作はこの形で送られるため、ここで受け取る。
         JsonNode body;
         try {
             body = OBJECT_MAPPER.readTree(request.getReader());

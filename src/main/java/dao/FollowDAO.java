@@ -9,6 +9,10 @@ import util.DBUtil;
 
 public class FollowDAO {
 
+    /**
+     * フォロー状態を切り替える。
+     * すでにフォロー済みなら解除し、まだなら追加する。
+     */
     public boolean toggleFollow(int followerId, int followeeId) {
         ensureSchema();
         try (Connection conn = DBUtil.getConnection()) {

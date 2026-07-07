@@ -52,7 +52,8 @@ public class LikeMutter extends HttpServlet {
             return;
         }
 
-        // 自分の投稿にはいいねできないようにする
+        // 自分の投稿にはいいねできないようにする。
+        // ここで投稿者を確認してから、全体の処理へ進める。
         Mutter target = new MutterDAO().findById(mutterId);
         if (target == null) {
             response.sendError(HttpServletResponse.SC_NOT_FOUND, "指定されたつぶやきは存在しません");

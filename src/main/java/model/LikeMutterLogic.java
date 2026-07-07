@@ -4,8 +4,8 @@ import dao.LikeDAO;
 
 public class LikeMutterLogic {
     /**
-     * つぶやきに対するいいねを切り替える。
-     * すでにいいね済みなら取り消し、まだなら追加する。
+     * サーブレットから呼ばれる、いいねの切り替え処理の入口です。
+     * ここではDAOに処理を委譲し、コントロール層を簡潔に保ちます。
      */
     public boolean execute(int mutterId, int userId) {
         return new LikeDAO().toggleLike(mutterId, userId);
