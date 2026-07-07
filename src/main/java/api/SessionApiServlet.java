@@ -13,6 +13,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import model.User;
+import security.CsrfTokenManager;
 import util.ObjectMapperFactory;
 
 /** JavaScript画面へログイン中ユーザーの公開情報だけを返します。 */
@@ -34,6 +35,6 @@ public class SessionApiServlet extends HttpServlet {
                     new ApiErrorResponse(401, "UNAUTHORIZED", "ログインが必要です"));
             return;
         }
-        OBJECT_MAPPER.writeValue(response.getWriter(), SessionUserResponse.from(loginUser));
+        OBJECT_MAPPER.writeValue(response.getWriter(), SessionUserResponse.from(loginUser, CsrfTokenManager.getOrCreate(session)));
     }
 }

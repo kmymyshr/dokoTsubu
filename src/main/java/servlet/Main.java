@@ -12,6 +12,8 @@ import jakarta.servlet.http.HttpSession;
 import model.Mutter;
 import model.PostMutterLogic;
 import model.User;
+import validation.MutterInputValidator;
+import validation.ValidationResult;
 
 /** メイン画面の枠を返します。画面データはJavaScriptがREST APIから取得します。 */
 @WebServlet("/Main")
@@ -44,13 +46,13 @@ public class Main extends HttpServlet {
             return;
         }
 
-        String text = request.getParameter("text");
-        if (text != null && !text.isBlank()) {
-            if (!new PostMutterLogic().execute(new Mutter(loginUser.getId(), text))) {
+        ValidationResult textResult = MutterInputValidator.validateText(request.getParameter("text"));
+        if (textResult.valid()) {
+            if (!new PostMutterLogic().execute(new Mutter(loginUser.getId(), textResult.value()))) {
                 session.setAttribute("errorMsg", "つぶやきの投稿に失敗しました");
             }
         } else {
-            session.setAttribute("errorMsg", "つぶやきが入力されていません");
+            session.setAttribute("errorMsg", textResult.message());
         }
         response.sendRedirect(request.getContextPath() + "/Main");
     }

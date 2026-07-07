@@ -12,6 +12,9 @@ import model.GetMutterLogic;
 import model.Mutter;
 import model.UpdateMutterLogic;
 import model.User;
+import security.CsrfTokenManager;
+import validation.MutterInputValidator;
+import validation.ValidationResult;
 
 @WebServlet("/UpdateMutter")
 public class UpdateMutter extends HttpServlet {
@@ -41,6 +44,7 @@ public class UpdateMutter extends HttpServlet {
 		}
 
 		request.setAttribute("mutter", targetMutter);
+		request.setAttribute("csrfToken", CsrfTokenManager.getOrCreate(session));
 		RequestDispatcher dispatcher = request.getRequestDispatcher("/WEB-INF/jsp/updateMutter.jsp");
 		dispatcher.forward(request, response);
 	}
@@ -57,13 +61,15 @@ public class UpdateMutter extends HttpServlet {
 
 		Integer mutterId = parseMutterId(request.getParameter("mutterId"));
 		Integer version = parseVersion(request.getParameter("version"));
-		String text = request.getParameter("text");
-		if (mutterId == null || version == null || text == null || text.isBlank()) {
-			redirectWithError(request, response, "つぶやきを入力してください");
+		ValidationResult textResult = MutterInputValidator.validateText(request.getParameter("text"));
+		if (mutterId == null || version == null || !textResult.valid()) {
+			redirectWithError(request, response,
+					textResult.valid() ? "更新情報が不正です" : textResult.message());
 			return;
 		}
 
-		Mutter mutter = new Mutter(mutterId, loginUser.getId(), loginUser.getName(), text, version);
+		Mutter mutter = new Mutter(mutterId, loginUser.getId(), loginUser.getName(),
+				textResult.value(), version);
 		if (!new UpdateMutterLogic().execute(mutter)) {
 			redirectWithError(request, response, "他の操作により更新できませんでした。最新の内容を確認してください");
 			return;

@@ -67,6 +67,6 @@
 </dialog>
 
 <footer><p>どこつぶ</p></footer>
-<script src="${pageContext.request.contextPath}/js/main.js" defer></script>
+<script type="module" src="${pageContext.request.contextPath}/js/main.js"></script>
 </body>
 </html>

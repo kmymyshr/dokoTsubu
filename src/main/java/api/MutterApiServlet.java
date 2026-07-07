@@ -1,7 +1,6 @@
 package api;
 
 import java.io.IOException;
-import java.util.List;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -22,6 +21,8 @@ import model.Mutter;
 import model.MutterPage;
 import model.User;
 import util.ObjectMapperFactory;
+import validation.MutterInputValidator;
+import validation.ValidationResult;
 
 /** つぶやきをリソースとして扱うREST APIです。 */
 @WebServlet("/api/mutters/*")
@@ -29,7 +30,6 @@ public class MutterApiServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
     private static final int DEFAULT_LIMIT = 20;
     private static final int MAX_LIMIT = 100;
-    private static final int MAX_TEXT_LENGTH = 255;
     private static final ObjectMapper OBJECT_MAPPER = ObjectMapperFactory.getObjectMapper();
 
     @Override
@@ -56,7 +56,13 @@ public class MutterApiServlet extends HttpServlet {
             return;
         }
 
-        String keyword = normalizeKeyword(request.getParameter("keyword"));
+        ValidationResult keywordResult = MutterInputValidator.validateKeyword(request.getParameter("keyword"));
+        if (!keywordResult.valid()) {
+            writeError(response, HttpServletResponse.SC_BAD_REQUEST,
+                    keywordResult.code(), keywordResult.message());
+            return;
+        }
+        String keyword = keywordResult.value();
         Integer cursor = parseOptionalPositiveInt(request.getParameter("cursor"));
         if (request.getParameter("cursor") != null && cursor == null) {
             writeError(response, HttpServletResponse.SC_BAD_REQUEST,
@@ -88,11 +94,11 @@ public class MutterApiServlet extends HttpServlet {
         }
 
         MutterWriteRequest body = readBody(request, response);
-        if (body == null || !validateText(body.text(), response)) {
-            return;
-        }
+        if (body == null) return;
+        ValidationResult textResult = validateText(body.text(), response);
+        if (!textResult.valid()) return;
         Mutter created = new MutterDAO().createAndReturn(
-                new Mutter(loginUser.getId(), body.text().trim()));
+                new Mutter(loginUser.getId(), textResult.value()));
         if (created == null) {
             writeError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
                     "CREATE_FAILED", "つぶやきの作成に失敗しました");
@@ -115,9 +121,9 @@ public class MutterApiServlet extends HttpServlet {
             return;
         }
         MutterWriteRequest body = readBody(request, response);
-        if (body == null || !validateText(body.text(), response)) {
-            return;
-        }
+        if (body == null) return;
+        ValidationResult textResult = validateText(body.text(), response);
+        if (!textResult.valid()) return;
         if (body.version() == null || body.version() < 0) {
             writeError(response, HttpServletResponse.SC_BAD_REQUEST,
                     "INVALID_VERSION", "更新時は0以上のversionが必要です");
@@ -137,7 +143,7 @@ public class MutterApiServlet extends HttpServlet {
         }
 
         Mutter updated = new Mutter(id, loginUser.getId(), loginUser.getName(),
-                body.text().trim(), body.version());
+                textResult.value(), body.version());
         if (!new MutterDAO().update(updated)) {
             writeError(response, HttpServletResponse.SC_CONFLICT,
                     "UPDATE_CONFLICT", "他の操作で更新されています。最新データを取得してください");
@@ -200,18 +206,14 @@ public class MutterApiServlet extends HttpServlet {
         }
     }
 
-    private boolean validateText(String text, HttpServletResponse response) throws IOException {
-        if (text == null || text.isBlank()) {
+    private ValidationResult validateText(String text, HttpServletResponse response)
+            throws IOException {
+        ValidationResult result = MutterInputValidator.validateText(text);
+        if (!result.valid()) {
             writeError(response, HttpServletResponse.SC_BAD_REQUEST,
-                    "TEXT_REQUIRED", "つぶやき本文を入力してください");
-            return false;
+                    result.code(), result.message());
         }
-        if (text.length() > MAX_TEXT_LENGTH) {
-            writeError(response, HttpServletResponse.SC_BAD_REQUEST,
-                    "TEXT_TOO_LONG", "つぶやき本文は255文字以内で入力してください");
-            return false;
-        }
-        return true;
+        return result;
     }
 
     private Integer parseResourceId(HttpServletRequest request, HttpServletResponse response)
@@ -263,10 +265,6 @@ public class MutterApiServlet extends HttpServlet {
         } catch (NumberFormatException e) {
             return null;
         }
-    }
-
-    private String normalizeKeyword(String keyword) {
-        return keyword == null || keyword.isBlank() ? null : keyword.trim();
     }
 
     private void writeJson(HttpServletResponse response, int status, Object body)
