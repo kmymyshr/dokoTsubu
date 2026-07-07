@@ -279,3 +279,56 @@ mvn test
 - **潜在的リスクと対応**:
   - `LikeDAO`/`FollowDAO`の一意制約違反時、DAO内部で`SQLException`を`e.printStackTrace()`してから`false`を返しており、テスト実行時にスタックトレースがコンソールへ出力される（テスト失敗ではなく想定内の出力）。将来的にロギングを整備する際の対象として記録。
   - `MUTTER_LIKES.MUTTER_ID`/`FOLLOWS.FOLLOWER_ID`等にも外部キー制約が無く、存在しないIDに対しても操作できてしまう可能性がある点は`MUTTERS.USER_ID`と同様の設計上の課題として記録（Phase3以降のドメイン層設計で検討）。
+
+### Phase 0続き: MutterApiServlet / SessionApiServlet の特性テスト
+
+- **変更日**: 2026-07-07
+- **変更理由**: `/api/mutters`一覧取得はStep1分析で指摘したN+1クエリ（1件ごとに`likeCount`/`likedByMe`/`followedByMe`を追加クエリで問い合わせる）を将来最適化する予定の最重要箇所。最適化の前にレスポンス形状・ステータスコード・エラーコードを固定するテストを用意した。本番コードは変更していない。
+- **変更箇所**:
+  - `src/test/java/support/ServletTestSupport.java`（新規）: Servletの特性テストで繰り返し必要になる、ログイン中ユーザー付きリクエストのモック生成、JSONリクエストボディの差し込み、レスポンスに書き込まれるJSON文字列のキャプチャをまとめた共通ヘルパー。
+  - `src/test/java/api/SessionApiServletCharacterizationTest.java`（新規）: 未ログイン時の401、ログイン時のユーザー情報+CSRFトークン返却を固定（2件）。
+  - `src/test/java/api/MutterApiServletCharacterizationTest.java`（新規）: `doGet`(単体取得の成功/404/IDの形式違いによる404と400の使い分け、一覧のカーソル・キーワード・limitのバリデーション)/`doPost`(401/405/バリデーション/201+Locationヘッダー)/`doPut`(バリデーション/404/403/楽観ロック競合409/200)/`doDelete`(404/403/204)の現状の挙動を固定（21件）。
+- **確認結果**: 新規23件を含む全68件のJavaテストが回帰なく成功。
+- **潜在的リスクと対応**:
+  - `doGet`の単体取得は、パスが数字でない場合は404「RESOURCE_NOT_FOUND」、`0`や負の数の場合は400「INVALID_ID」という、一見直感に反する使い分けになっている。これは既存の挙動としてテストで明示的に固定した（Phase4のAPI移行時に仕様として維持するか見直すかの判断材料にする）。
+  - N+1クエリ自体はこの段階ではまだ修正していない。Phase4（Spring MVCへの移行、1クエリJOINへの最適化）で、このテストがレスポンス形状の回帰検知に使われる想定。
+
+### 現状のまとめ（2026-07-07時点）
+
+Phase0「安全網構築」の範囲で、DAO層4クラス（`MutterDAO`/`UserDAO`/`LikeDAO`/`FollowDAO`、計33件）とAPI層2クラス（`MutterApiServlet`/`SessionApiServlet`、計23件）の特性テストを整備した。既存テスト12件と合わせて**Javaテスト計68件**が全て成功しており、`mvn clean package`でのビルド（React部分含む）も成功することを確認済み。本番コードへの変更は「DB接続情報の重複解消」（`DBUtil`/`MutterDAO`、挙動は無変更）のみで、それ以外は全てテスト追加である。
+
+### 今後の課題（未着手・次回以降のタスク）
+
+以下は、ステップ2のモダナイゼーション計画で洗い出した項目のうち、今回のセッションではまだ着手していないもの。優先順に記載する。
+
+**1. 特性テストの範囲拡大（Phase0の残り）**
+- 今回はREST API（`MutterApiServlet`, `SessionApiServlet`）のみ特性テストを整備した。JSP/フォーム経由の旧Servlet（`Main`, `Login`, `Register`, `Profile`, `UpdateMutter`, `DeleteMutter`, `SearchMutter`, `LikeMutter`, `FollowUser`, `FollowerList`, `FollowingList`, `Logout`）にはまだ特性テストが無い。特にJSON POSTを受ける`LikeMutter`/`FollowUser`は次のCSRF修正の前提として先に固めておきたい。
+- `model/*Logic`クラス（`GetMutterListLogic`, `PostMutterLogic`等）自体の単体テストも未整備（現状はDAO/Servlet経由の間接的な検証のみ）。
+
+**2. セキュリティ修正（Step1で指摘した既知の脆弱性、未修正）**
+- `/LikeMutter`, `/FollowUser`が`CsrfProtectionFilter`の対象URLに含まれておらず、CSRF保護が効いていない。修正時は上記の特性テスト整備後に着手する。
+
+**3. Phase1: Branch by Abstraction（未着手）**
+- `Repository`インターフェースの導入（`MutterRepository`, `UserRepository`, `LikeRepository`, `FollowRepository`）。既存DAOをラップし、レイヤー境界だけ先に導入する。
+- `model/*Logic`のパススルークラスを意味のあるユースケース単位（`PostMutterUseCase`等）に再編。
+
+**4. Phase2: 基盤の入れ替え（未着手）**
+- HikariCPによるコネクションプール導入（現状は`DriverManager`で毎回新規接続）。
+- Flywayによるスキーマのコード管理化。特に`MUTTERS`テーブルの実際の定義を本番DBで確認し、`TestDatabaseSupport`で推測したスキーマとの差異を解消する。
+- 各DAOの`ensureSchema()`（毎リクエストでの`CREATE TABLE IF NOT EXISTS`実行）を廃止。
+
+**5. Phase3〜4: 永続層・APIエンドポイントの移行（未着手）**
+- DAOをSpring Data JDBC実装へ置き換え。
+- `MutterApiServlet`一覧取得のN+1クエリ解消（1クエリJOIN化）。今回整備した特性テストで回帰を検知する。
+- `MutterDAO.findPage`/`search`のLIKE検索がキーワード中の`%`/`_`をエスケープしていない問題への対応要否を判断。
+- `MUTTERS.USER_ID`等に外部キー制約が無い問題への対応要否を判断。
+
+**6. Phase5: 認証/CSRFのSpring Security移行（未着手）**
+
+**7. Phase6: 旧UI（JSP + vanilla JS）のReact統合、Phase7: 旧コードの撤去（未着手）**
+- `Profile`/`FollowerList`/`FollowingList`のReact化と、対応するJSP・`webapp/js/*.js`の削除。
+
+**8. その他の細かい未修正項目**
+- DAOのエラーハンドリングの不統一（`e.printStackTrace()`で握りつぶすものと`RuntimeException`を投げるものが混在）。
+- `Mutter`/`User`のテレスコーピングコンストラクタの整理。
+- Mockitoの「self-attaching」警告（将来のJDKで動作しなくなる可能性）への対応（ビルド設定でjavaagentとして明示的に追加する）。
