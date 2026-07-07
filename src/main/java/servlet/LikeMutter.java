@@ -2,6 +2,9 @@ package servlet;
 
 import java.io.IOException;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -10,10 +13,12 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import model.LikeMutterLogic;
 import model.User;
+import util.ObjectMapperFactory;
 
 @WebServlet("/LikeMutter")
 public class LikeMutter extends HttpServlet {
     private static final long serialVersionUID = 1L;
+    private static final ObjectMapper OBJECT_MAPPER = ObjectMapperFactory.getObjectMapper();
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
@@ -26,7 +31,20 @@ public class LikeMutter extends HttpServlet {
             return;
         }
 
-        Integer mutterId = parsePositiveInteger(request.getParameter("mutterId"));
+        // リクエストボディは JSON で送られてくるためパラメータではなくボディを読み取る
+        JsonNode body;
+        try {
+            body = OBJECT_MAPPER.readTree(request.getReader());
+        } catch (JsonProcessingException e) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "JSONの形式が不正です");
+            return;
+        }
+        Integer mutterId = null;
+        if (body != null && body.has("mutterId")) {
+            JsonNode idNode = body.get("mutterId");
+            if (idNode.isInt()) mutterId = idNode.asInt();
+            else if (idNode.isTextual()) mutterId = parsePositiveInteger(idNode.asText());
+        }
         if (mutterId == null) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "mutterIdが不正です");
             return;

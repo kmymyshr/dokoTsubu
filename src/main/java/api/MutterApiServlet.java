@@ -64,7 +64,8 @@ public class MutterApiServlet extends HttpServlet {
             }
             int likeCount = new LikeDAO().countLikes(id);
             boolean likedByMe = new LikeDAO().hasLiked(id, loginUser.getId());
-            writeJson(response, HttpServletResponse.SC_OK, MutterResponse.from(mutter, likeCount, likedByMe));
+            boolean followedByMe = new dao.FollowDAO().isFollowing(loginUser.getId(), mutter.getUserId());
+            writeJson(response, HttpServletResponse.SC_OK, MutterResponse.from(mutter, likeCount, likedByMe, followedByMe));
             return;
         }
 
@@ -95,7 +96,8 @@ public class MutterApiServlet extends HttpServlet {
                 .map(m -> {
                     int likeCount = new LikeDAO().countLikes(m.getId());
                     boolean likedByMe = new LikeDAO().hasLiked(m.getId(), loginUser.getId());
-                    return dto.MutterResponse.from(m, likeCount, likedByMe);
+                    boolean followedByMe = new dao.FollowDAO().isFollowing(loginUser.getId(), m.getUserId());
+                    return dto.MutterResponse.from(m, likeCount, likedByMe, followedByMe);
                 })
                 .toList();
         writeJson(response, HttpServletResponse.SC_OK, MutterListResponse.from(responseList, page));
@@ -134,8 +136,8 @@ public class MutterApiServlet extends HttpServlet {
         }
 
         response.setHeader("Location", request.getContextPath() + "/api/mutters/" + created.getId());
-        // 新規作成直後はいいねはないため 0 / false を返す
-        writeJson(response, HttpServletResponse.SC_CREATED, MutterResponse.from(created, 0, false));
+        // 新規作成直後はいいね・フォローはないため false を返す
+        writeJson(response, HttpServletResponse.SC_CREATED, MutterResponse.from(created, 0, false, false));
     }
 
     /**
@@ -189,8 +191,9 @@ public class MutterApiServlet extends HttpServlet {
         Mutter refreshed = new MutterDAO().findById(id);
         int likeCount = new LikeDAO().countLikes(id);
         boolean likedByMe = new LikeDAO().hasLiked(id, loginUser.getId());
+        boolean followedByMe = new dao.FollowDAO().isFollowing(loginUser.getId(), refreshed.getUserId());
         writeJson(response, HttpServletResponse.SC_OK,
-            MutterResponse.from(refreshed, likeCount, likedByMe));
+            MutterResponse.from(refreshed, likeCount, likedByMe, followedByMe));
     }
 
     /**

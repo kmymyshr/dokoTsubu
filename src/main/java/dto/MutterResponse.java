@@ -13,9 +13,10 @@ public record MutterResponse(
 		int version,
 		LocalDateTime createdAt,
 		int likeCount,
-		boolean likedByMe) {
+		boolean likedByMe,
+		boolean followedByMe) {
 
-	public static MutterResponse from(Mutter mutter, int likeCount, boolean likedByMe) {
+	public static MutterResponse from(Mutter mutter, int likeCount, boolean likedByMe, boolean followedByMe) {
 		return new MutterResponse(
 				mutter.getId(),
 				mutter.getUserId(),
@@ -24,6 +25,7 @@ public record MutterResponse(
 				mutter.getVersion(),
 				mutter.getCreatedAt(),
 				likeCount,
-				likedByMe);
+				likedByMe,
+				followedByMe);
 	}
 }

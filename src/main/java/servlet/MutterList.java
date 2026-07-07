@@ -53,7 +53,8 @@ public class MutterList extends HttpServlet {
 				.map(m -> {
 					int likeCount = new dao.LikeDAO().countLikes(m.getId());
 					boolean likedByMe = new dao.LikeDAO().hasLiked(m.getId(), loginUser.getId());
-					return dto.MutterResponse.from(m, likeCount, likedByMe);
+					boolean followedByMe = new dao.FollowDAO().isFollowing(loginUser.getId(), m.getUserId());
+					return dto.MutterResponse.from(m, likeCount, likedByMe, followedByMe);
 				})
 				.toList();
 		MutterListResponse responseBody = MutterListResponse.from(responseList, page);

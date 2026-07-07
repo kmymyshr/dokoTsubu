@@ -9,6 +9,7 @@ function formatDate(value) {
 function MutterCard({ mutter, user, editable, onEdit, onDelete }) {
   const [likeCount, setLikeCount] = useState(mutter.likeCount ?? 0);
   const [liked, setLiked] = useState(mutter.likedByMe ?? false);
+  const [followed, setFollowed] = useState(mutter.followedByMe ?? false);
 
   async function handleLike() {
     try {
@@ -25,6 +26,7 @@ function MutterCard({ mutter, user, editable, onEdit, onDelete }) {
     try {
       const res = await followUser(mutter.userId);
       // res.following と res.followers などが返る（既存サーブレットではfollowing/followers）
+      setFollowed(Boolean(res.following));
       alert((res.following ? "フォローしました" : "フォローを解除しました") + "（フォロワー: " + res.followers + "）");
     } catch (e) {
       alert(e.message || "フォローに失敗しました");
@@ -41,7 +43,7 @@ function MutterCard({ mutter, user, editable, onEdit, onDelete }) {
       <div className="mutter-actions">
         <button type="button" onClick={handleLike}>{liked ? "♥" : "♡"} {likeCount}</button>
         {user?.id !== mutter.userId && (
-          <button type="button" onClick={handleFollow}>フォロー</button>
+          <button type="button" onClick={handleFollow}>{followed ? "フォロー中" : "フォロー"}</button>
         )}
         {editable && (
           <>
