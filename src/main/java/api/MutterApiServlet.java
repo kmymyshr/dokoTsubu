@@ -134,7 +134,8 @@ public class MutterApiServlet extends HttpServlet {
         }
 
         response.setHeader("Location", request.getContextPath() + "/api/mutters/" + created.getId());
-        writeJson(response, HttpServletResponse.SC_CREATED, MutterResponse.from(created));
+        // 新規作成直後はいいねはないため 0 / false を返す
+        writeJson(response, HttpServletResponse.SC_CREATED, MutterResponse.from(created, 0, false));
     }
 
     /**
@@ -185,8 +186,11 @@ public class MutterApiServlet extends HttpServlet {
                     "UPDATE_CONFLICT", "他の操作で更新されています。最新データを取得してください");
             return;
         }
+        Mutter refreshed = new MutterDAO().findById(id);
+        int likeCount = new LikeDAO().countLikes(id);
+        boolean likedByMe = new LikeDAO().hasLiked(id, loginUser.getId());
         writeJson(response, HttpServletResponse.SC_OK,
-                MutterResponse.from(new MutterDAO().findById(id)));
+            MutterResponse.from(refreshed, likeCount, likedByMe));
     }
 
     /**

@@ -48,7 +48,15 @@ public class MutterList extends HttpServlet {
 		// 3. limit を整えて、つぶやき一覧を取得する。
 		int limit = parseLimit(request.getParameter("limit"));
 		MutterPage page = new GetMutterListLogic().execute(cursor, limit);
-		MutterListResponse responseBody = MutterListResponse.from(page);
+		// つぶやきごとにいいね情報を付与してから返す
+		java.util.List<dto.MutterResponse> responseList = page.getMutters().stream()
+				.map(m -> {
+					int likeCount = new dao.LikeDAO().countLikes(m.getId());
+					boolean likedByMe = new dao.LikeDAO().hasLiked(m.getId(), loginUser.getId());
+					return dto.MutterResponse.from(m, likeCount, likedByMe);
+				})
+				.toList();
+		MutterListResponse responseBody = MutterListResponse.from(responseList, page);
 
 		// 4. JSON としてレスポンスを返す。
 		response.setContentType("application/json");
