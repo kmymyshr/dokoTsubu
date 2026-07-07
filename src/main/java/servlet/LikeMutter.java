@@ -11,7 +11,9 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import dao.MutterDAO;
 import model.LikeMutterLogic;
+import model.Mutter;
 import model.User;
 import util.ObjectMapperFactory;
 
@@ -47,6 +49,17 @@ public class LikeMutter extends HttpServlet {
         }
         if (mutterId == null) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "mutterIdが不正です");
+            return;
+        }
+
+        // 自分の投稿にはいいねできないようにする
+        Mutter target = new MutterDAO().findById(mutterId);
+        if (target == null) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND, "指定されたつぶやきは存在しません");
+            return;
+        }
+        if (target.getUserId() == loginUser.getId()) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "自分の投稿にはいいねできません");
             return;
         }
 

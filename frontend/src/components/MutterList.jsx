@@ -41,7 +41,9 @@ function MutterCard({ mutter, user, editable, onEdit, onDelete }) {
       </div>
       <p className="mutter-text">{mutter.text}</p>
       <div className="mutter-actions">
-        <button type="button" onClick={handleLike}>{liked ? "♥" : "♡"} {likeCount}</button>
+        <button type="button" onClick={handleLike} disabled={user?.id === mutter.userId} title={user?.id === mutter.userId ? "自分の投稿にはいいねできません" : "いいね"}>
+          {liked ? "♥" : "♡"} {likeCount}
+        </button>
         {user?.id !== mutter.userId && (
           <button type="button" onClick={handleFollow}>{followed ? "フォロー中" : "フォロー"}</button>
         )}
