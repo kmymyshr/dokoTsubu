@@ -30,4 +30,8 @@ public class FollowUserLogic {
     public List<User> findFollowingUsers(int userId) {
         return new FollowDAO().findFollowingUsers(userId);
     }
+
+    public List<User> findFollowerUsers(int userId) {
+        return new FollowDAO().findFollowerUsers(userId);
+    }
 }

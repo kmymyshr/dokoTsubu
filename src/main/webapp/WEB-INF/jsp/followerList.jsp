@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>フォロー中一覧</title>
+    <title>フォロワー一覧</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/react/assets/main.css">
 </head>
 <body data-context-path="${pageContext.request.contextPath}">
@@ -13,30 +13,30 @@
         <p><a href="${pageContext.request.contextPath}/Profile?userId=${targetUser.id}">プロフィールへ戻る</a></p>
 
         <section class="profile-card">
-            <h1>${targetUser.name} さんのフォロー中</h1>
-            <p>合計: <span id="listCount">${followingCount}</span> 人</p>
+            <h1>${targetUser.name} さんのフォロワー</h1>
+            <p>合計: <span id="listCount">${followerCount}</span> 人</p>
 
             <c:choose>
-                <c:when test="${empty followingUsers}">
-                    <p id="emptyState">まだフォローしているユーザーはいません。</p>
+                <c:when test="${empty followerUsers}">
+                    <p id="emptyState">まだフォロワーはいません。</p>
                 </c:when>
                 <c:otherwise>
-                    <p id="emptyState" style="display: none;">まだフォローしているユーザーはいません。</p>
+                    <p id="emptyState" style="display: none;">まだフォロワーはいません。</p>
                     <ul id="followList">
-                        <c:forEach var="followingUser" items="${followingUsers}">
-                            <li data-user-id="${followingUser.id}" style="display: flex; gap: 12px; align-items: center; margin: 8px 0;">
-                                <a href="${pageContext.request.contextPath}/Profile?userId=${followingUser.id}">
-                                    ${followingUser.name}
+                        <c:forEach var="followerUser" items="${followerUsers}">
+                            <li data-user-id="${followerUser.id}" style="display: flex; gap: 12px; align-items: center; margin: 8px 0;">
+                                <a href="${pageContext.request.contextPath}/Profile?userId=${followerUser.id}">
+                                    ${followerUser.name}
                                 </a>
-                                <c:if test="${currentUserId ne followingUser.id}">
+                                <c:if test="${currentUserId ne followerUser.id}">
                                     <button
                                         type="button"
                                         class="follow-toggle"
-                                        data-user-id="${followingUser.id}"
-                                        data-following="${followedUserIds.contains(followingUser.id)}"
-                                        data-remove-on-unfollow="${listOwnerIsLoginUser}">
+                                        data-user-id="${followerUser.id}"
+                                        data-following="${followedUserIds.contains(followerUser.id)}"
+                                        data-remove-on-unfollow="false">
                                         <c:choose>
-                                            <c:when test="${followedUserIds.contains(followingUser.id)}">フォロー済</c:when>
+                                            <c:when test="${followedUserIds.contains(followerUser.id)}">フォロー済</c:when>
                                             <c:otherwise>フォロー</c:otherwise>
                                         </c:choose>
                                     </button>

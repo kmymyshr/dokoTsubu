@@ -19,7 +19,7 @@ import model.User;
 import util.ObjectMapperFactory;
 
 /** Cookie認証された変更系APIにCSRFトークンを要求します。 */
-@WebFilter(urlPatterns = { "/api/*", "/Main", "/UpdateMutter", "/DeleteMutter" })
+@WebFilter(urlPatterns = { "/api/*", "/Main", "/UpdateMutter", "/DeleteMutter", "/Profile" })
 public class CsrfProtectionFilter implements Filter {
     private static final Set<String> PROTECTED_METHODS = Set.of("POST", "PUT", "PATCH", "DELETE");
     private static final ObjectMapper OBJECT_MAPPER = ObjectMapperFactory.getObjectMapper();

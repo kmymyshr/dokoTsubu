@@ -12,10 +12,12 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import model.FollowUserLogic;
 import model.User;
+import security.CsrfTokenManager;
 
 @WebServlet("/Profile")
 public class Profile extends HttpServlet {
     private static final long serialVersionUID = 1L;
+    private static final int MAX_BIO_LENGTH = 160;
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -39,6 +41,57 @@ public class Profile extends HttpServlet {
             return;
         }
 
+        prepareProfileAttributes(request, session, loginUser, profileUser);
+        RequestDispatcher dispatcher = request.getRequestDispatcher("/WEB-INF/jsp/profile.jsp");
+        dispatcher.forward(request, response);
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        request.setCharacterEncoding("UTF-8");
+
+        HttpSession session = request.getSession(false);
+        User loginUser = session == null ? null : (User) session.getAttribute("loginUser");
+        if (loginUser == null) {
+            response.sendRedirect(request.getContextPath() + "/");
+            return;
+        }
+
+        Integer userId = parsePositiveInteger(request.getParameter("userId"));
+        if (userId == null || userId != loginUser.getId()) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN, "本人のプロフィールだけ更新できます");
+            return;
+        }
+
+        String bio = normalizeBio(request.getParameter("bio"));
+        if (bio.length() > MAX_BIO_LENGTH) {
+            User profileUser = new UserDAO().findById(userId);
+            request.setAttribute("errorMsg", "自己紹介は160文字以内で入力してください");
+            request.setAttribute("submittedBio", bio);
+            prepareProfileAttributes(request, session, loginUser, profileUser);
+            RequestDispatcher dispatcher = request.getRequestDispatcher("/WEB-INF/jsp/profile.jsp");
+            dispatcher.forward(request, response);
+            return;
+        }
+
+        UserDAO userDAO = new UserDAO();
+        if (!userDAO.updateBio(userId, bio)) {
+            User profileUser = userDAO.findById(userId);
+            request.setAttribute("errorMsg", "自己紹介の更新に失敗しました");
+            request.setAttribute("submittedBio", bio);
+            prepareProfileAttributes(request, session, loginUser, profileUser);
+            RequestDispatcher dispatcher = request.getRequestDispatcher("/WEB-INF/jsp/profile.jsp");
+            dispatcher.forward(request, response);
+            return;
+        }
+
+        User refreshedUser = userDAO.findById(userId);
+        session.setAttribute("loginUser", refreshedUser);
+        response.sendRedirect(request.getContextPath() + "/Profile?userId=" + userId + "&updated=1");
+    }
+
+    private void prepareProfileAttributes(HttpServletRequest request, HttpSession session, User loginUser, User profileUser) {
         boolean ownProfile = loginUser.getId() == profileUser.getId();
         FollowUserLogic logic = new FollowUserLogic();
 
@@ -47,9 +100,7 @@ public class Profile extends HttpServlet {
         request.setAttribute("following", ownProfile ? false : logic.isFollowing(loginUser.getId(), profileUser.getId()));
         request.setAttribute("followers", logic.countFollowers(profileUser.getId()));
         request.setAttribute("followingCount", logic.countFollowing(profileUser.getId()));
-
-        RequestDispatcher dispatcher = request.getRequestDispatcher("/WEB-INF/jsp/profile.jsp");
-        dispatcher.forward(request, response);
+        request.setAttribute("csrfToken", CsrfTokenManager.getOrCreate(session));
     }
 
     private Integer parsePositiveInteger(String value) {
@@ -62,5 +113,9 @@ public class Profile extends HttpServlet {
         } catch (NumberFormatException e) {
             return null;
         }
+    }
+
+    private String normalizeBio(String bio) {
+        return bio == null ? "" : bio.trim();
     }
 }

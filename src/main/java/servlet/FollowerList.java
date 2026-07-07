@@ -14,8 +14,8 @@ import jakarta.servlet.http.HttpSession;
 import model.FollowUserLogic;
 import model.User;
 
-@WebServlet("/FollowingList")
-public class FollowingList extends HttpServlet {
+@WebServlet("/FollowerList")
+public class FollowerList extends HttpServlet {
     private static final long serialVersionUID = 1L;
 
     @Override
@@ -42,16 +42,15 @@ public class FollowingList extends HttpServlet {
 
         FollowUserLogic logic = new FollowUserLogic();
         request.setAttribute("targetUser", targetUser);
-        request.setAttribute("followingUsers", logic.findFollowingUsers(userId));
-        request.setAttribute("followingCount", logic.countFollowing(userId));
+        request.setAttribute("followerUsers", logic.findFollowerUsers(userId));
+        request.setAttribute("followerCount", logic.countFollowers(userId));
         request.setAttribute("currentUserId", loginUser.getId());
-        request.setAttribute("listOwnerIsLoginUser", loginUser.getId() == userId);
         request.setAttribute("followedUserIds",
                 logic.findFollowingUsers(loginUser.getId()).stream()
                         .map(User::getId)
                         .collect(Collectors.toSet()));
 
-        RequestDispatcher dispatcher = request.getRequestDispatcher("/WEB-INF/jsp/followingList.jsp");
+        RequestDispatcher dispatcher = request.getRequestDispatcher("/WEB-INF/jsp/followerList.jsp");
         dispatcher.forward(request, response);
     }
 

@@ -5,7 +5,10 @@ export default function Header({ user, contextPath }) {
         <h1>どこつぶ</h1>
         <p>{user ? `${user.id} ${user.name} さん、ログイン中です` : "ログイン情報を読み込み中です"}</p>
       </div>
-      <a href={`${contextPath}/Logout`}>ログアウト</a>
+      <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+        {user && <a href={`${contextPath}/Profile?userId=${user.id}`}>マイページ</a>}
+        <a href={`${contextPath}/Logout`}>ログアウト</a>
+      </div>
     </header>
   );
 }

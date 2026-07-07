@@ -91,7 +91,7 @@ public class FollowDAO {
 
     public List<User> findFollowingUsers(int userId) {
         ensureSchema();
-        String sql = "SELECT U.ID, U.NAME, U.PASS "
+        String sql = "SELECT U.ID, U.NAME, U.PASS, U.BIO "
                 + "FROM FOLLOWS F "
                 + "JOIN USERS U ON F.FOLLOWEE_ID = U.ID "
                 + "WHERE F.FOLLOWER_ID = ? "
@@ -105,7 +105,35 @@ public class FollowDAO {
                     users.add(new User(
                             rs.getInt("ID"),
                             rs.getString("NAME"),
-                            rs.getString("PASS")));
+                            rs.getString("PASS"),
+                            rs.getString("BIO")));
+                }
+            }
+            return users;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return users;
+        }
+    }
+
+    public List<User> findFollowerUsers(int userId) {
+        ensureSchema();
+        String sql = "SELECT U.ID, U.NAME, U.PASS, U.BIO "
+                + "FROM FOLLOWS F "
+                + "JOIN USERS U ON F.FOLLOWER_ID = U.ID "
+                + "WHERE F.FOLLOWEE_ID = ? "
+                + "ORDER BY U.NAME ASC";
+        List<User> users = new ArrayList<>();
+        try (Connection conn = DBUtil.getConnection();
+                PreparedStatement pStmt = conn.prepareStatement(sql)) {
+            pStmt.setInt(1, userId);
+            try (ResultSet rs = pStmt.executeQuery()) {
+                while (rs.next()) {
+                    users.add(new User(
+                            rs.getInt("ID"),
+                            rs.getString("NAME"),
+                            rs.getString("PASS"),
+                            rs.getString("BIO")));
                 }
             }
             return users;
