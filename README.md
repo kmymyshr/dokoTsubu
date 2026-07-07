@@ -266,3 +266,16 @@ mvn test
 - **潜在的リスクと対応**:
   - 推測した`MUTTERS`スキーマが本番と異なる可能性がある → Phase2（Flywayによるスキーマのコード管理化）の際に実DBの定義と突き合わせて確認する。
   - 埋め込みH2と本番のH2（TCPサーバーモード）でSQL方言の細かな差異が出る可能性がある → バージョンを本番と同じ2.4.240に固定することで最小化している。
+
+### Phase 0続き: UserDAO / LikeDAO / FollowDAO の特性テスト
+
+- **変更日**: 2026-07-07
+- **変更理由**: `UserDAO`/`LikeDAO`/`FollowDAO`は元々`DBUtil`を利用しており接続情報の重複は無かったため、本番コードは変更せず、現状の挙動を固定する特性テストのみを追加した。DAO層全体のテストカバレッジをPhase0で揃えることが目的。
+- **変更箇所**:
+  - `src/test/java/dao/UserDAOCharacterizationTest.java`（新規）: `findById`/`findByName`/`create`(NAME重複時にfalseを返す挙動、BIOが`null`のとき`""`に正規化される挙動を含む)/`updateBio`の現状の挙動を固定。
+  - `src/test/java/dao/LikeDAOCharacterizationTest.java`（新規）: `addLike`/`removeLike`/`hasLiked`/`countLikes`/`toggleLike`の現状の挙動を固定。`MUTTER_ID`+`USER_ID`のUNIQUE制約により二重いいねが失敗する挙動も含む。
+  - `src/test/java/dao/FollowDAOCharacterizationTest.java`（新規）: `follow`/`unfollow`/`isFollowing`/`toggleFollow`/`countFollowers`/`countFollowing`/`findFollowingUsers`/`findFollowerUsers`(NAME昇順ソート)の現状の挙動を固定。
+- **確認結果**: `dao`パッケージの特性テスト計33件、および既存のJavaテスト（`FollowUserLogicTest`, `LikeMutterLogicTest`, `CsrfProtectionFilterTest`, `MutterInputValidatorTest`）を含む全45件が回帰なく成功。
+- **潜在的リスクと対応**:
+  - `LikeDAO`/`FollowDAO`の一意制約違反時、DAO内部で`SQLException`を`e.printStackTrace()`してから`false`を返しており、テスト実行時にスタックトレースがコンソールへ出力される（テスト失敗ではなく想定内の出力）。将来的にロギングを整備する際の対象として記録。
+  - `MUTTER_LIKES.MUTTER_ID`/`FOLLOWS.FOLLOWER_ID`等にも外部キー制約が無く、存在しないIDに対しても操作できてしまう可能性がある点は`MUTTERS.USER_ID`と同様の設計上の課題として記録（Phase3以降のドメイン層設計で検討）。
