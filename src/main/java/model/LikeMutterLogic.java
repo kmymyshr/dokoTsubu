@@ -8,7 +8,9 @@ public class LikeMutterLogic {
      * ここではDAOに処理を委譲し、コントロール層を簡潔に保ちます。
      */
     public boolean execute(int mutterId, int userId) {
-        return new LikeDAO().toggleLike(mutterId, userId);
+        LikeDAO dao = new LikeDAO();
+        dao.toggleLike(mutterId, userId);
+        return dao.hasLiked(mutterId, userId);
     }
 
     public int countLikes(int mutterId) {
