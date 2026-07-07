@@ -19,6 +19,9 @@ public final class MutterInputValidator {
         return ValidationResult.valid(normalized);
     }
 
+    /**
+     * 検索キーワードとして適切かどうかを確認する。
+     */
     public static ValidationResult validateKeyword(String keyword) {
         if (keyword == null || keyword.isBlank()) {
             return ValidationResult.valid(null);

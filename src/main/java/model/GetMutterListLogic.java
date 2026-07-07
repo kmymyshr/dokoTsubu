@@ -6,11 +6,17 @@ import dao.MutterDAO;
 public class GetMutterListLogic {
 	public static final int DEFAULT_LIMIT = 20;
 
+	/**
+	 * つぶやき一覧を取得する。
+	 * 既定件数で返す。
+	 */
 	public List<Mutter> execute() {
 		return execute(null, DEFAULT_LIMIT).getMutters();
 	}
 
-		/** REST API向けに検索とカーソルページネーションを組み合わせる。 */
+	/**
+	 * REST API 向けに、検索条件とカーソルを使ってつぶやき一覧を取得する。
+	 */
 	public MutterPage execute(String keyword, Integer cursor, int limit) {
 		List<Mutter> fetched = new MutterDAO().findPage(keyword, cursor, limit + 1);
 		boolean hasNext = fetched.size() > limit;
@@ -21,6 +27,9 @@ public class GetMutterListLogic {
 		return new MutterPage(mutters, nextCursor, hasNext);
 	}
 
+	/**
+	 * 通常の一覧表示向けに、カーソル付きでつぶやき一覧を取得する。
+	 */
 	public MutterPage execute(Integer cursor, int limit) {
 		MutterDAO dao = new MutterDAO();
 

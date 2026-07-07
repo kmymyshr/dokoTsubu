@@ -16,7 +16,10 @@ import model.User;
 import validation.MutterInputValidator;
 import validation.ValidationResult;
 
-/** 旧検索画面との互換用。新しいメイン画面はGET /api/mutters?keyword=...を使用します。 */
+/**
+ * 検索機能を担当するサーブレットです。
+ * ユーザーが入力したキーワードでつぶやきを検索し、結果を画面に渡します。
+ */
 @WebServlet("/SearchMutter")
 public class SearchMutter extends HttpServlet {
     private static final long serialVersionUID = 1L;
@@ -24,6 +27,7 @@ public class SearchMutter extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        // 1. ログインしているかを確認する。未ログインならトップページへ戻す。
         HttpSession session = request.getSession(false);
         User loginUser = session == null ? null : (User) session.getAttribute("loginUser");
         if (loginUser == null) {
@@ -31,8 +35,11 @@ public class SearchMutter extends HttpServlet {
             return;
         }
 
+        // 2. リクエストに含まれた検索キーワードを検証する。
         ValidationResult keywordResult =
                 MutterInputValidator.validateKeyword(request.getParameter("keyword"));
+
+        // 3. キーワードが正しければ、検索処理を実行して結果をセットする。
         if (keywordResult.valid() && keywordResult.value() != null) {
             List<Mutter> mutterList = new SearchMutterLogic().execute(keywordResult.value());
             request.setAttribute("mutterList", mutterList);
@@ -40,9 +47,12 @@ public class SearchMutter extends HttpServlet {
                 request.setAttribute("errorMsg", "検索結果がありません");
             }
         } else {
+            // 4. キーワードが空や不正なら、エラーメッセージを画面に渡す。
             request.setAttribute("errorMsg", keywordResult.valid()
                     ? "キーワードを入力してください" : keywordResult.message());
         }
+
+        // 5. 検索モードであることを画面に伝え、表示用JSPへ転送する。
         request.setAttribute("searchMode", true);
         RequestDispatcher dispatcher = request.getRequestDispatcher("/WEB-INF/jsp/main.jsp");
         dispatcher.forward(request, response);

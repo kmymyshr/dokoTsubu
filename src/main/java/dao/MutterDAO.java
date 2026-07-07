@@ -11,12 +11,15 @@ import java.util.List;
 import model.Mutter;
 
 public class MutterDAO {
-	//データベース接続に使用する情報
+	// データベース接続に使う情報を保持する。
 	private final String JDBC_URL = "jdbc:h2:tcp://localhost/~/dokoTsubu";
 	private final String DB_USER = "sa";
 	private final String DB_PASS = "";
 
-	/** 最新のつぶやきを指定件数だけ取得する。 */
+	/**
+	 * 最新のつぶやきを指定件数だけ取得する。
+	 * 主にトップページの表示で使う。
+	 */
 	public List<Mutter> findLatest(int limit) {
 		List<Mutter> mutterList = new ArrayList<>();
 		//JDBCドライバを読み込む
@@ -59,7 +62,10 @@ public class MutterDAO {
 		return mutterList;
 	}
 
-	/** 指定したIDより古いつぶやきを指定件数だけ取得する。 */
+	/**
+	 * 指定したカーソルより古いつぶやきを取得する。
+	 * 無限スクロールなどで使う。
+	 */
 	public List<Mutter> findByCursor(int cursor, int limit) {
 		List<Mutter> mutterList = new ArrayList<>();
 		loadDriver();
@@ -83,7 +89,10 @@ public class MutterDAO {
 		return mutterList;
 	}
 
-		/** REST API用に、検索条件とカーソルを同時に適用して取得する。 */
+	/**
+	 * REST API 用に、検索条件とカーソルをまとめて適用して取得する。
+	 * キーワード検索やページネーションに対応する。
+	 */
 	public List<Mutter> findPage(String keyword, Integer cursor, int limit) {
 		List<Mutter> mutterList = new ArrayList<>();
 		loadDriver();
@@ -108,7 +117,9 @@ public class MutterDAO {
 		return mutterList;
 	}
 
-	/** 編集画面で使うつぶやきをIDで1件取得する。 */
+	/**
+	 * 編集画面や詳細表示で使うため、ID で 1 件だけ取得する。
+	 */
 	public Mutter findById(int mutterId) {
 		loadDriver();
 
@@ -125,7 +136,9 @@ public class MutterDAO {
 		}
 	}
 
-		/** 作成したつぶやきを採番済みIDを含めて返す。 */
+	/**
+	 * 新しく作成したつぶやきを、採番された ID 付きで返す。
+	 */
 	public Mutter createAndReturn(Mutter mutter) {
 		loadDriver();
 		String sql = "INSERT INTO MUTTERS(USER_ID, TEXT) VALUES(?, ?)";
@@ -146,8 +159,12 @@ public class MutterDAO {
 		return findById(generatedId);
 	}
 
+	/**
+	 * つぶやきを新規作成する。
+	 * ここでは作成結果の成功/失敗だけを返す。
+	 */
 	public boolean create(Mutter mutter) {
-		//JDBCドライバを読み込む
+		// JDBCドライバを読み込む
 		try {
 			Class.forName("org.h2.Driver");
 		} catch (ClassNotFoundException e) {
@@ -223,6 +240,10 @@ public class MutterDAO {
 		}
 	}
 
+	/**
+	 * キーワードを含むつぶやきを検索する。
+	 * 旧検索機能で使われていたメソッド。
+	 */
 	public List<Mutter> search(String keyword) {
 		List<Mutter> mutterList = new ArrayList<>();
 

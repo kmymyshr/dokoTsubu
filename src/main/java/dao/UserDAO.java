@@ -10,7 +10,10 @@ import util.DBUtil;
 
 public class UserDAO {
 
-	// ユーザ情報がUSERSテーブルに存在するかチェックして、ID、NAME、PASSを入れたUserオブジェクトを返す
+	/**
+	 * ユーザー名をもとに、ユーザー情報をデータベースから取得する。
+	 * ログイン時に利用する。
+	 */
 	public User findByName(String name) {
 		String sql = "SELECT ID, NAME, PASS FROM USERS WHERE NAME = ?";
 
@@ -37,7 +40,9 @@ public class UserDAO {
 		}
 	}
 
-	// ユーザを新規登録する
+	/**
+	 * 新しいユーザーをデータベースに登録する。
+	 */
 	public boolean create(User user) {
 		String sql = "INSERT INTO USERS (NAME, PASS) VALUES (?, ?)";
 

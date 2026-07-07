@@ -24,7 +24,10 @@ import util.ObjectMapperFactory;
 import validation.MutterInputValidator;
 import validation.ValidationResult;
 
-/** つぶやきをリソースとして扱うREST APIです。 */
+/**
+ * つぶやきを扱う REST API です。
+ * 一覧取得・作成・更新・削除の4つの操作を受け付けます。
+ */
 @WebServlet("/api/mutters/*")
 public class MutterApiServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
@@ -32,20 +35,26 @@ public class MutterApiServlet extends HttpServlet {
     private static final int MAX_LIMIT = 100;
     private static final ObjectMapper OBJECT_MAPPER = ObjectMapperFactory.getObjectMapper();
 
+    /**
+     * つぶやきの一覧取得または個別取得を行う。
+     */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        // 1. ログインしているか確認する。
         User loginUser = requireLogin(request, response);
         if (loginUser == null) {
             return;
         }
 
+        // 2. URL に ID が含まれているか確認する。
         boolean individualResource = hasResourceId(request);
         Integer id = parseResourceId(request, response);
         if (individualResource && id == null) {
             return;
         }
         if (id != null) {
+            // 3. 個別のつぶやきを取得して JSON で返す。
             Mutter mutter = new MutterDAO().findById(id);
             if (mutter == null) {
                 writeError(response, HttpServletResponse.SC_NOT_FOUND,
@@ -56,6 +65,7 @@ public class MutterApiServlet extends HttpServlet {
             return;
         }
 
+        // 4. 一覧検索用の条件を読み取り、つぶやき一覧を返す。
         ValidationResult keywordResult = MutterInputValidator.validateKeyword(request.getParameter("keyword"));
         if (!keywordResult.valid()) {
             writeError(response, HttpServletResponse.SC_BAD_REQUEST,
@@ -80,9 +90,13 @@ public class MutterApiServlet extends HttpServlet {
         writeJson(response, HttpServletResponse.SC_OK, MutterListResponse.from(page));
     }
 
+    /**
+     * 新しいつぶやきを作成する。
+     */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        // 1. ログインしているか確認する。
         User loginUser = requireLogin(request, response);
         if (loginUser == null) {
             return;
@@ -93,10 +107,13 @@ public class MutterApiServlet extends HttpServlet {
             return;
         }
 
+        // 2. リクエストボディから投稿内容を読み取る。
         MutterWriteRequest body = readBody(request, response);
         if (body == null) return;
         ValidationResult textResult = validateText(body.text(), response);
         if (!textResult.valid()) return;
+
+        // 3. データベースに保存し、作成結果を返す。
         Mutter created = new MutterDAO().createAndReturn(
                 new Mutter(loginUser.getId(), textResult.value()));
         if (created == null) {
@@ -109,9 +126,13 @@ public class MutterApiServlet extends HttpServlet {
         writeJson(response, HttpServletResponse.SC_CREATED, MutterResponse.from(created));
     }
 
+    /**
+     * 既存のつぶやきを更新する。
+     */
     @Override
     protected void doPut(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        // 1. ログインしているか確認する。
         User loginUser = requireLogin(request, response);
         if (loginUser == null) {
             return;
@@ -120,6 +141,8 @@ public class MutterApiServlet extends HttpServlet {
         if (id == null) {
             return;
         }
+
+        // 2. 更新内容を読み取り、入力内容を確認する。
         MutterWriteRequest body = readBody(request, response);
         if (body == null) return;
         ValidationResult textResult = validateText(body.text(), response);
@@ -130,6 +153,7 @@ public class MutterApiServlet extends HttpServlet {
             return;
         }
 
+        // 3. 対象つぶやきが存在し、自分のものか確認する。
         Mutter current = new MutterDAO().findById(id);
         if (current == null) {
             writeError(response, HttpServletResponse.SC_NOT_FOUND,
@@ -142,6 +166,7 @@ public class MutterApiServlet extends HttpServlet {
             return;
         }
 
+        // 4. 更新を実行して結果を返す。
         Mutter updated = new Mutter(id, loginUser.getId(), loginUser.getName(),
                 textResult.value(), body.version());
         if (!new MutterDAO().update(updated)) {
@@ -153,9 +178,13 @@ public class MutterApiServlet extends HttpServlet {
                 MutterResponse.from(new MutterDAO().findById(id)));
     }
 
+    /**
+     * つぶやきを削除する。
+     */
     @Override
     protected void doDelete(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        // 1. ログインしているか確認する。
         User loginUser = requireLogin(request, response);
         if (loginUser == null) {
             return;
@@ -165,6 +194,7 @@ public class MutterApiServlet extends HttpServlet {
             return;
         }
 
+        // 2. 対象つぶやきが存在し、自分のものか確認する。
         Mutter current = new MutterDAO().findById(id);
         if (current == null) {
             writeError(response, HttpServletResponse.SC_NOT_FOUND,
@@ -176,6 +206,8 @@ public class MutterApiServlet extends HttpServlet {
                     "FORBIDDEN", "他のユーザーのつぶやきは削除できません");
             return;
         }
+
+        // 3. 削除を実行する。
         if (!new MutterDAO().delete(id, loginUser.getId())) {
             writeError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
                     "DELETE_FAILED", "つぶやきの削除に失敗しました");
