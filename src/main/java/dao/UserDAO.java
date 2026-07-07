@@ -10,6 +10,32 @@ import util.DBUtil;
 
 public class UserDAO {
 
+	public User findById(int id) {
+		String sql = "SELECT ID, NAME, PASS FROM USERS WHERE ID = ?";
+
+		try (Connection conn = DBUtil.getConnection();
+				PreparedStatement pStmt = conn.prepareStatement(sql)) {
+
+			pStmt.setInt(1, id);
+
+			ResultSet rs = pStmt.executeQuery();
+
+			if (rs.next()) {
+				int userId = rs.getInt("ID");
+				String userName = rs.getString("NAME");
+				String pass = rs.getString("PASS");
+
+				return new User(userId, userName, pass);
+			}
+			return null;
+		}
+
+		catch (SQLException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+
 	/**
 	 * ユーザー名をもとに、ユーザー情報をデータベースから取得する。
 	 * ログイン時に利用する。

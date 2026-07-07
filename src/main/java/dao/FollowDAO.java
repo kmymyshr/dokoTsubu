@@ -4,7 +4,10 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
+import model.User;
 import util.DBUtil;
 
 public class FollowDAO {
@@ -83,6 +86,32 @@ public class FollowDAO {
         } catch (SQLException e) {
             e.printStackTrace();
             return 0;
+        }
+    }
+
+    public List<User> findFollowingUsers(int userId) {
+        ensureSchema();
+        String sql = "SELECT U.ID, U.NAME, U.PASS "
+                + "FROM FOLLOWS F "
+                + "JOIN USERS U ON F.FOLLOWEE_ID = U.ID "
+                + "WHERE F.FOLLOWER_ID = ? "
+                + "ORDER BY U.NAME ASC";
+        List<User> users = new ArrayList<>();
+        try (Connection conn = DBUtil.getConnection();
+                PreparedStatement pStmt = conn.prepareStatement(sql)) {
+            pStmt.setInt(1, userId);
+            try (ResultSet rs = pStmt.executeQuery()) {
+                while (rs.next()) {
+                    users.add(new User(
+                            rs.getInt("ID"),
+                            rs.getString("NAME"),
+                            rs.getString("PASS")));
+                }
+            }
+            return users;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return users;
         }
     }
 

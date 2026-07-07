@@ -6,10 +6,18 @@ function formatDate(value) {
   return Number.isNaN(date.getTime()) ? "" : date.toLocaleString("ja-JP");
 }
 
-function MutterCard({ mutter, user, editable, onEdit, onDelete }) {
+function MutterCard({
+  mutter,
+  user,
+  contextPath,
+  editable,
+  followed,
+  onFollowChange,
+  onEdit,
+  onDelete
+}) {
   const [likeCount, setLikeCount] = useState(mutter.likeCount ?? 0);
   const [liked, setLiked] = useState(mutter.likedByMe ?? false);
-  const [followed, setFollowed] = useState(mutter.followedByMe ?? false);
 
   async function handleLike() {
     try {
@@ -25,9 +33,9 @@ function MutterCard({ mutter, user, editable, onEdit, onDelete }) {
     if (!user) return;
     try {
       const res = await followUser(mutter.userId);
-      // res.following と res.followers などが返る（既存サーブレットではfollowing/followers）
-      setFollowed(Boolean(res.following));
-      alert((res.following ? "フォローしました" : "フォローを解除しました") + "（フォロワー: " + res.followers + "）");
+      const nextFollowing = Boolean(res.following);
+      onFollowChange?.(mutter.userId, nextFollowing);
+      alert((nextFollowing ? "フォローしました" : "フォローを解除しました") + "（フォロワー: " + res.followers + "）");
     } catch (e) {
       alert(e.message || "フォローに失敗しました");
     }
@@ -43,24 +51,33 @@ function MutterCard({ mutter, user, editable, onEdit, onDelete }) {
   return (
     <article className="mutter-card">
       <div className="mutter-meta">
-        <strong>{mutter.userName}</strong>
+        <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
+          <strong>
+            <a href={`${contextPath}/Profile?userId=${mutter.userId}`}>{mutter.userName}</a>
+          </strong>
+          {user?.id !== mutter.userId && (
+            <button
+              type="button"
+              onClick={handleFollowClick}
+              title={followed ? "クリックするとフォローを解除します" : "クリックするとフォローします"}
+              style={followed ? { backgroundColor: "#dbeafe", color: "#1d4ed8", borderColor: "#60a5fa" } : undefined}
+            >
+              {followed ? "フォロー済" : "フォロー"}
+            </button>
+          )}
+        </div>
         <time dateTime={mutter.createdAt}>{formatDate(mutter.createdAt)}</time>
       </div>
       <p className="mutter-text">{mutter.text}</p>
       <div className="mutter-actions">
-        <button type="button" onClick={handleLike} disabled={user?.id === mutter.userId} title={user?.id === mutter.userId ? "自分の投稿にはいいねできません" : "いいね"}>
+        <button
+          type="button"
+          onClick={handleLike}
+          disabled={user?.id === mutter.userId}
+          title={user?.id === mutter.userId ? "自分の投稿にはいいねできません" : "いいね"}
+        >
           {liked ? "♥" : "♡"} {likeCount}
         </button>
-        {user?.id !== mutter.userId && (
-          <button
-            type="button"
-            onClick={handleFollowClick}
-            title={followed ? "クリックするとフォローを解除します" : "クリックするとフォローします"}
-            style={followed ? { backgroundColor: "#dbeafe", color: "#1d4ed8", borderColor: "#60a5fa" } : undefined}
-          >
-            {followed ? "フォロー解除" : "フォロー"}
-          </button>
-        )}
         {editable && (
           <>
             <button type="button" onClick={() => onEdit(mutter)}>編集</button>
@@ -72,8 +89,19 @@ function MutterCard({ mutter, user, editable, onEdit, onDelete }) {
   );
 }
 
-export default function MutterList({ mutters, user, loading, hasNext, onRefresh, onLoadMore,
-                                     onEdit, onDelete }) {
+export default function MutterList({
+  mutters,
+  user,
+  contextPath,
+  followStateByUserId,
+  onFollowChange,
+  loading,
+  hasNext,
+  onRefresh,
+  onLoadMore,
+  onEdit,
+  onDelete
+}) {
   return (
     <section aria-labelledby="listHeading">
       <div className="section-heading">
@@ -82,9 +110,17 @@ export default function MutterList({ mutters, user, loading, hasNext, onRefresh,
       </div>
       <div aria-live="polite" aria-busy={loading}>
         {mutters.map(mutter => (
-          <MutterCard key={mutter.id} mutter={mutter} user={user}
-                      editable={user?.id === mutter.userId}
-                      onEdit={onEdit} onDelete={onDelete} />
+          <MutterCard
+            key={mutter.id}
+            mutter={mutter}
+            user={user}
+            contextPath={contextPath}
+            editable={user?.id === mutter.userId}
+            followed={followStateByUserId[mutter.userId] ?? Boolean(mutter.followedByMe)}
+            onFollowChange={onFollowChange}
+            onEdit={onEdit}
+            onDelete={onDelete}
+          />
         ))}
       </div>
       {!loading && mutters.length === 0 && <p>つぶやきがありません。</p>}

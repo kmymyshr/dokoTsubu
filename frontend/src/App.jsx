@@ -8,10 +8,17 @@ import SearchForm from "./components/SearchForm.jsx";
 
 const PAGE_LIMIT = 20;
 
+function buildFollowStateMap(mutters) {
+  return Object.fromEntries(
+    mutters.map(mutter => [mutter.userId, Boolean(mutter.followedByMe)])
+  );
+}
+
 export default function App() {
   const contextPath = document.body.dataset.contextPath || "";
   const [user, setUser] = useState(null);
   const [mutters, setMutters] = useState([]);
+  const [followStateByUserId, setFollowStateByUserId] = useState({});
   const [keyword, setKeyword] = useState("");
   const [page, setPage] = useState({ nextCursor: null, hasNext: false });
   const [olderPagesLoaded, setOlderPagesLoaded] = useState(false);
@@ -28,6 +35,17 @@ export default function App() {
         limit: PAGE_LIMIT
       });
       setMutters(current => append ? [...current, ...result.mutters] : result.mutters);
+      setFollowStateByUserId(current => {
+        if (!append) {
+          return buildFollowStateMap(result.mutters);
+        }
+
+        const next = { ...current };
+        for (const mutter of result.mutters) {
+          next[mutter.userId] = Boolean(mutter.followedByMe);
+        }
+        return next;
+      });
       setPage({ nextCursor: result.nextCursor, hasNext: result.hasNext });
       if (append) setOlderPagesLoaded(true);
       if (!silent) setMessage(null);
@@ -49,6 +67,7 @@ export default function App() {
         const result = await fetchMutterPage({ limit: PAGE_LIMIT });
         if (!active) return;
         setMutters(result.mutters);
+        setFollowStateByUserId(buildFollowStateMap(result.mutters));
         setPage({ nextCursor: result.nextCursor, hasNext: result.hasNext });
       } catch (error) {
         if (active) setMessage({ text: error.message, error: true });
@@ -124,7 +143,12 @@ export default function App() {
         {message && <p className={`message${message.error ? " error" : ""}`} role="status">{message.text}</p>}
         <PostForm onSubmit={handlePost} disabled={loading || !user} />
         <SearchForm onSearch={handleSearch} disabled={loading || !user} />
-        <MutterList mutters={mutters} user={user} loading={loading} hasNext={page.hasNext}
+        <MutterList mutters={mutters} user={user} contextPath={contextPath}
+                    followStateByUserId={followStateByUserId}
+                    onFollowChange={(userId, following) => {
+                      setFollowStateByUserId(current => ({ ...current, [userId]: following }));
+                    }}
+                    loading={loading} hasNext={page.hasNext}
                     onRefresh={() => { setOlderPagesLoaded(false); loadPage(); }}
                     onLoadMore={() => loadPage({ append: true })}
                     onEdit={setEditing} onDelete={handleDelete} />

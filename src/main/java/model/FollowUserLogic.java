@@ -1,5 +1,7 @@
 package model;
 
+import java.util.List;
+
 import dao.FollowDAO;
 
 public class FollowUserLogic {
@@ -23,5 +25,9 @@ public class FollowUserLogic {
 
     public int countFollowing(int userId) {
         return new FollowDAO().countFollowing(userId);
+    }
+
+    public List<User> findFollowingUsers(int userId) {
+        return new FollowDAO().findFollowingUsers(userId);
     }
 }
