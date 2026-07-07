@@ -248,3 +248,21 @@ mvn test
 
 このプロジェクトは、JSP / Servlet ベースの構成を土台にしながら、React + REST API への分離や責務整理を学べるようにしています。  
 画面、API、Logic、DAO、DB の流れを追いやすい構成なので、段階的なリファクタリングや機能追加の教材としても使いやすい状態です。
+
+## 変更履歴（モダナイゼーション対応）
+
+既存の挙動を100%維持したまま、クリーンアーキテクチャ化・テスト整備を段階的に進めています。各変更は「なぜそうしたか」が分かるよう、コード側にもコメントを残しています。
+
+### Phase 0: 安全網構築（DB接続の一本化 + MutterDAOの特性テスト）
+
+- **変更日**: 2026-07-07
+- **変更理由**: リファクタリングを安全に進めるための土台として、(1) DB接続情報が`DBUtil`と`MutterDAO`の2箇所に重複していた問題を解消し、(2) 現状のDAOの挙動を固定する特性テスト（Characterization Test）を追加した。DAO層はこれまでテストが1本も無く、リファクタリングの安全網が無い状態だったため。
+- **変更箇所**:
+  - `pom.xml`: 特性テストで埋め込みH2（`jdbc:h2:mem:...`）を使うため、H2をtestスコープの依存として追加（本番で使用しているバージョン2.4.240に合わせた）。
+  - `src/main/java/util/DBUtil.java`: 接続先(URL/USER/PASSWORD)をシステムプロパティで上書き可能にした。プロパティ未設定時は従来と全く同じ値になるため、本番の挙動は変わらない。
+  - `src/main/java/dao/MutterDAO.java`: 独自に持っていた接続先情報と`Class.forName`呼び出しを削除し、`DBUtil.getConnection()`に一本化。SQLやロジックには一切手を加えていない。
+  - `src/test/java/support/TestDatabaseSupport.java`（新規）: テスト用の埋め込みH2にスキーマを用意するヘルパー。**`MUTTERS`テーブルの作成スクリプトが既存コードのどこにも見当たらなかった**ため、`MutterDAO`/`MutterInputValidator`の使われ方から逆算して定義した。実際の本番DB定義と差異がないか、今後のFlywayベースライン化の際に必ず確認が必要（未検証のリスクとして記録）。
+  - `src/test/java/dao/MutterDAOCharacterizationTest.java`（新規）: `findLatest`/`findByCursor`/`findPage`/`findById`/`createAndReturn`/`create`/`update`(楽観ロック競合・他人の投稿への更新拒否を含む)/`delete`/`search`の現状の挙動をテストとして固定。キーワード検索が`%`や`_`をエスケープしていない点、`MUTTERS.USER_ID`に外部キー制約が無く存在しないユーザーIDでもINSERTが成立してしまう点など、既知の問題点はあえて「今の挙動」として記録し、修正はしていない。
+- **潜在的リスクと対応**:
+  - 推測した`MUTTERS`スキーマが本番と異なる可能性がある → Phase2（Flywayによるスキーマのコード管理化）の際に実DBの定義と突き合わせて確認する。
+  - 埋め込みH2と本番のH2（TCPサーバーモード）でSQL方言の細かな差異が出る可能性がある → バージョンを本番と同じ2.4.240に固定することで最小化している。

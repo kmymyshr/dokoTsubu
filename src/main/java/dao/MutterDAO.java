@@ -1,7 +1,6 @@
 package dao;
 
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -9,12 +8,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 import model.Mutter;
+import util.DBUtil;
 
 public class MutterDAO {
-	// データベース接続に使う情報を保持する。
-	private final String JDBC_URL = "jdbc:h2:tcp://localhost/~/dokoTsubu";
-	private final String DB_USER = "sa";
-	private final String DB_PASS = "";
+	// 接続先情報をここで個別に持たず、DBUtilに一本化した。
+	// 従来はDBUtilと同じ接続先(URL/USER/PASS)をこのクラスにも複製しており、
+	// 片方だけ変更すると本番とテストで接続先がずれる不具合の温床になっていたため。
+	// (モダナイゼーション計画 Phase0/1: DB接続情報の重複解消)
 
 	/**
 	 * 最新のつぶやきを指定件数だけ取得する。
@@ -22,15 +22,7 @@ public class MutterDAO {
 	 */
 	public List<Mutter> findLatest(int limit) {
 		List<Mutter> mutterList = new ArrayList<>();
-		//JDBCドライバを読み込む
-		try {
-			Class.forName("org.h2.Driver");
-		} catch (ClassNotFoundException e) {
-			throw new RuntimeException(
-					"JDBCドライバのロードに失敗しました。");
-		}
-		//データベース接続
-		try (Connection conn = DriverManager.getConnection(JDBC_URL, DB_USER, DB_PASS)) {
+		try (Connection conn = DBUtil.getConnection()) {
 
 			//Mutters.USER_ID=USERS.IDを条件にJOIN,USERS.NAMEを取得するように変更
 			String sql = "SELECT m.ID, m.USER_ID, u.NAME, m.TEXT, m.VERSION, m.CREATED_AT "
@@ -44,16 +36,8 @@ public class MutterDAO {
 
 			//結果表に格納されたレコードの内容を
 			//Mutterインスタンスに設定し、リストに追加
-
 			while (rs.next()) {
-				int id = rs.getInt("ID");
-				int userId = rs.getInt("USER_ID");
-				String userName = rs.getString("NAME");
-				String text = rs.getString("TEXT");
-				int version = rs.getInt("VERSION");
-				java.time.LocalDateTime createdAt = rs.getTimestamp("CREATED_AT").toLocalDateTime();
-				Mutter mutter = new Mutter(id, userId, userName, text, version, createdAt);
-				mutterList.add(mutter);
+				mutterList.add(toMutter(rs));
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();
@@ -68,12 +52,11 @@ public class MutterDAO {
 	 */
 	public List<Mutter> findByCursor(int cursor, int limit) {
 		List<Mutter> mutterList = new ArrayList<>();
-		loadDriver();
 
 		String sql = "SELECT m.ID, m.USER_ID, u.NAME, m.TEXT, m.VERSION, m.CREATED_AT "
 				+ "FROM MUTTERS m JOIN USERS u ON m.USER_ID = u.ID "
 				+ "WHERE m.ID < ? ORDER BY m.ID DESC LIMIT ?";
-		try (Connection conn = DriverManager.getConnection(JDBC_URL, DB_USER, DB_PASS);
+		try (Connection conn = DBUtil.getConnection();
 				PreparedStatement pStmt = conn.prepareStatement(sql)) {
 			pStmt.setInt(1, cursor);
 			pStmt.setInt(2, limit);
@@ -95,14 +78,13 @@ public class MutterDAO {
 	 */
 	public List<Mutter> findPage(String keyword, Integer cursor, int limit) {
 		List<Mutter> mutterList = new ArrayList<>();
-		loadDriver();
 		StringBuilder sql = new StringBuilder(
 				"SELECT m.ID, m.USER_ID, u.NAME, m.TEXT, m.VERSION, m.CREATED_AT "
 				+ "FROM MUTTERS m JOIN USERS u ON m.USER_ID = u.ID WHERE 1 = 1 ");
 		if (keyword != null) sql.append("AND m.TEXT LIKE ? ");
 		if (cursor != null) sql.append("AND m.ID < ? ");
 		sql.append("ORDER BY m.ID DESC LIMIT ?");
-		try (Connection conn = DriverManager.getConnection(JDBC_URL, DB_USER, DB_PASS);
+		try (Connection conn = DBUtil.getConnection();
 				PreparedStatement pStmt = conn.prepareStatement(sql.toString())) {
 			int index = 1;
 			if (keyword != null) pStmt.setString(index++, "%" + keyword + "%");
@@ -121,11 +103,9 @@ public class MutterDAO {
 	 * 編集画面や詳細表示で使うため、ID で 1 件だけ取得する。
 	 */
 	public Mutter findById(int mutterId) {
-		loadDriver();
-
 		String sql = "SELECT m.ID, m.USER_ID, u.NAME, m.TEXT, m.VERSION, m.CREATED_AT "
 				+ "FROM MUTTERS m JOIN USERS u ON m.USER_ID = u.ID WHERE m.ID = ?";
-		try (Connection conn = DriverManager.getConnection(JDBC_URL, DB_USER, DB_PASS);
+		try (Connection conn = DBUtil.getConnection();
 				PreparedStatement pStmt = conn.prepareStatement(sql)) {
 			pStmt.setInt(1, mutterId);
 			ResultSet rs = pStmt.executeQuery();
@@ -140,10 +120,9 @@ public class MutterDAO {
 	 * 新しく作成したつぶやきを、採番された ID 付きで返す。
 	 */
 	public Mutter createAndReturn(Mutter mutter) {
-		loadDriver();
 		String sql = "INSERT INTO MUTTERS(USER_ID, TEXT) VALUES(?, ?)";
 		int generatedId;
-		try (Connection conn = DriverManager.getConnection(JDBC_URL, DB_USER, DB_PASS);
+		try (Connection conn = DBUtil.getConnection();
 				PreparedStatement pStmt = conn.prepareStatement(
 						sql, java.sql.Statement.RETURN_GENERATED_KEYS)) {
 			pStmt.setInt(1, mutter.getUserId());
@@ -164,21 +143,11 @@ public class MutterDAO {
 	 * ここでは作成結果の成功/失敗だけを返す。
 	 */
 	public boolean create(Mutter mutter) {
-		// JDBCドライバを読み込む
-		try {
-			Class.forName("org.h2.Driver");
-		} catch (ClassNotFoundException e) {
-			throw new RuntimeException(
-					"JDBCドライバのロードに失敗しました。");
-		}
-		//データベース接続
-		try (Connection conn = DriverManager.getConnection(JDBC_URL, DB_USER, DB_PASS)) {
+		try (Connection conn = DBUtil.getConnection()) {
 			//INSERT文を準備
-
 			String sql = "INSERT INTO MUTTERS(USER_ID, TEXT) VALUES(?, ?)";
 			PreparedStatement pStmt = conn.prepareStatement(sql);
 			//INSERT文中の「?」に使用する値を設定しSQLを完成
-
 			pStmt.setInt(1, mutter.getUserId());
 			pStmt.setString(2, mutter.getText());
 			//INSERTを実行
@@ -197,15 +166,9 @@ public class MutterDAO {
 	 * 指定されたユーザー自身のつぶやきを更新する。
 	 */
 	public boolean update(Mutter mutter) {
-		try {
-			Class.forName("org.h2.Driver");
-		} catch (ClassNotFoundException e) {
-			throw new RuntimeException("JDBCドライバのロードに失敗しました。", e);
-		}
-
 		String sql = "UPDATE MUTTERS SET TEXT = ?, VERSION = VERSION + 1 "
 				+ "WHERE ID = ? AND USER_ID = ? AND VERSION = ?";
-		try (Connection conn = DriverManager.getConnection(JDBC_URL, DB_USER, DB_PASS);
+		try (Connection conn = DBUtil.getConnection();
 				PreparedStatement pStmt = conn.prepareStatement(sql)) {
 			pStmt.setString(1, mutter.getText());
 			pStmt.setInt(2, mutter.getId());
@@ -222,14 +185,8 @@ public class MutterDAO {
 	 * 指定されたユーザー自身のつぶやきを削除する。
 	 */
 	public boolean delete(int mutterId, int userId) {
-		try {
-			Class.forName("org.h2.Driver");
-		} catch (ClassNotFoundException e) {
-			throw new RuntimeException("JDBCドライバのロードに失敗しました。", e);
-		}
-
 		String sql = "DELETE FROM MUTTERS WHERE ID = ? AND USER_ID = ?";
-		try (Connection conn = DriverManager.getConnection(JDBC_URL, DB_USER, DB_PASS);
+		try (Connection conn = DBUtil.getConnection();
 				PreparedStatement pStmt = conn.prepareStatement(sql)) {
 			pStmt.setInt(1, mutterId);
 			pStmt.setInt(2, userId);
@@ -247,15 +204,7 @@ public class MutterDAO {
 	public List<Mutter> search(String keyword) {
 		List<Mutter> mutterList = new ArrayList<>();
 
-		//JDBCドライバを読み込む
-		try {
-			Class.forName("org.h2.Driver");
-		} catch (ClassNotFoundException e) {
-			throw new RuntimeException(
-					"JDBCドライバのロードに失敗しました。");
-		}
-		//データベース接続
-		try (Connection conn = DriverManager.getConnection(JDBC_URL, DB_USER, DB_PASS)) {
+		try (Connection conn = DBUtil.getConnection()) {
 
 			String sql = "SELECT m.ID, m.USER_ID, u.NAME, m.TEXT, m.VERSION, m.CREATED_AT "
 					+ "FROM MUTTERS m JOIN USERS u ON m.USER_ID = u.ID "
@@ -268,14 +217,7 @@ public class MutterDAO {
 			ResultSet rs = pStmt.executeQuery();
 
 			while (rs.next()) {
-				int id = rs.getInt("ID");
-				int userId = rs.getInt("USER_ID");
-				String userName = rs.getString("NAME");
-				String text = rs.getString("TEXT");
-				int version = rs.getInt("VERSION");
-				java.time.LocalDateTime createdAt = rs.getTimestamp("CREATED_AT").toLocalDateTime();
-				Mutter mutter = new Mutter(id, userId, userName, text, version, createdAt);
-				mutterList.add(mutter);
+				mutterList.add(toMutter(rs));
 			}
 
 		} catch (SQLException e) {
@@ -285,14 +227,6 @@ public class MutterDAO {
 
 		return mutterList;
 
-	}
-
-	private void loadDriver() {
-		try {
-			Class.forName("org.h2.Driver");
-		} catch (ClassNotFoundException e) {
-			throw new RuntimeException("JDBCドライバのロードに失敗しました。", e);
-		}
 	}
 
 	private Mutter toMutter(ResultSet rs) throws SQLException {
