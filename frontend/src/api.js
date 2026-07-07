@@ -70,3 +70,17 @@ export function updateMutter(id, text, version) {
 export function deleteMutter(id) {
   return request(`/api/mutters/${id}`, { method: "DELETE" });
 }
+
+export function likeMutter(mutterId) {
+  return request(`/LikeMutter`, {
+    method: "POST",
+    body: JSON.stringify({ mutterId })
+  });
+}
+
+export function followUser(followeeId) {
+  return request(`/FollowUser`, {
+    method: "POST",
+    body: JSON.stringify({ followeeId })
+  });
+}

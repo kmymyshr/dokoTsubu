@@ -4,22 +4,26 @@ import java.time.LocalDateTime;
 
 import model.Mutter;
 
-/** つぶやき1件分のJSONレスポンス。 */
+/** つぶやき1件分のJSONレスポンス（いいね情報を含む）。 */
 public record MutterResponse(
 		int id,
 		int userId,
 		String userName,
 		String text,
 		int version,
-		LocalDateTime createdAt) {
+		LocalDateTime createdAt,
+		int likeCount,
+		boolean likedByMe) {
 
-	public static MutterResponse from(Mutter mutter) {
+	public static MutterResponse from(Mutter mutter, int likeCount, boolean likedByMe) {
 		return new MutterResponse(
 				mutter.getId(),
 				mutter.getUserId(),
 				mutter.getUserName(),
 				mutter.getText(),
 				mutter.getVersion(),
-				mutter.getCreatedAt());
+				mutter.getCreatedAt(),
+				likeCount,
+				likedByMe);
 	}
 }

@@ -23,6 +23,7 @@ import model.User;
 import util.ObjectMapperFactory;
 import validation.MutterInputValidator;
 import validation.ValidationResult;
+import dao.LikeDAO;
 
 /**
  * つぶやきを扱う REST API です。
@@ -61,7 +62,9 @@ public class MutterApiServlet extends HttpServlet {
                         "MUTTER_NOT_FOUND", "指定されたつぶやきは存在しません");
                 return;
             }
-            writeJson(response, HttpServletResponse.SC_OK, MutterResponse.from(mutter));
+            int likeCount = new LikeDAO().countLikes(id);
+            boolean likedByMe = new LikeDAO().hasLiked(id, loginUser.getId());
+            writeJson(response, HttpServletResponse.SC_OK, MutterResponse.from(mutter, likeCount, likedByMe));
             return;
         }
 
@@ -87,7 +90,15 @@ public class MutterApiServlet extends HttpServlet {
         }
         int limit = requestedLimit == null ? DEFAULT_LIMIT : Math.min(requestedLimit, MAX_LIMIT);
         MutterPage page = new GetMutterListLogic().execute(keyword, cursor, limit);
-        writeJson(response, HttpServletResponse.SC_OK, MutterListResponse.from(page));
+        // prepare MutterResponse list including like counts and liked flag
+        java.util.List<dto.MutterResponse> responseList = page.getMutters().stream()
+                .map(m -> {
+                    int likeCount = new LikeDAO().countLikes(m.getId());
+                    boolean likedByMe = new LikeDAO().hasLiked(m.getId(), loginUser.getId());
+                    return dto.MutterResponse.from(m, likeCount, likedByMe);
+                })
+                .toList();
+        writeJson(response, HttpServletResponse.SC_OK, MutterListResponse.from(responseList, page));
     }
 
     /**

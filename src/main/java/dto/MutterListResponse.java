@@ -10,11 +10,7 @@ public record MutterListResponse(
 		Integer nextCursor,
 		boolean hasNext) {
 
-	public static MutterListResponse from(MutterPage page) {
-		List<MutterResponse> mutters = page.getMutters().stream()
-				.map(MutterResponse::from)
-				.toList();
-
+	public static MutterListResponse from(List<MutterResponse> mutters, MutterPage page) {
 		return new MutterListResponse(
 				mutters,
 				page.getNextCursor(),
