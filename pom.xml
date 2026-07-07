@@ -12,6 +12,8 @@
     <properties>
         <maven.compiler.release>17</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <node.version>v24.18.0</node.version>
+        <frontend-maven-plugin.version>2.0.0</frontend-maven-plugin.version>
     </properties>
 
     <!-- Jackson関連ライブラリのバージョンを揃える -->
@@ -73,6 +75,41 @@
     <finalName>dokoTsubu</finalName>
 
     <plugins>
+        <!-- React/ViteをMavenビルドへ統合 -->
+        <plugin>
+            <groupId>com.github.eirslett</groupId>
+            <artifactId>frontend-maven-plugin</artifactId>
+            <version>${frontend-maven-plugin.version}</version>
+            <configuration>
+                <workingDirectory>frontend</workingDirectory>
+                <installDirectory>${project.basedir}/.frontend</installDirectory>
+            </configuration>
+            <executions>
+                <execution>
+                    <id>install-node-and-npm</id>
+                    <phase>generate-resources</phase>
+                    <goals><goal>install-node-and-npm</goal></goals>
+                    <configuration><nodeVersion>${node.version}</nodeVersion></configuration>
+                </execution>
+                <execution>
+                    <id>npm-install</id>
+                    <phase>generate-resources</phase>
+                    <goals><goal>npm</goal></goals>
+                    <configuration><arguments>install</arguments></configuration>
+                </execution>
+                <execution>
+                    <id>vite-build</id>
+                    <phase>generate-resources</phase>
+                    <goals><goal>npm</goal></goals>
+                    <configuration><arguments>run build</arguments></configuration>
+                </execution>                <execution>
+                    <id>react-test</id>
+                    <phase>test</phase>
+                    <goals><goal>npm</goal></goals>
+                    <configuration><arguments>test</arguments></configuration>
+                </execution>
+            </executions>
+        </plugin>
         <!-- Javaコンパイル設定 -->
         <plugin>
             <groupId>org.apache.maven.plugins</groupId>
@@ -88,6 +125,14 @@
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-war-plugin</artifactId>
             <version>3.5.1</version>
+            <configuration>
+                <webResources>
+                    <resource>
+                        <directory>${project.build.directory}/frontend-dist</directory>
+                        <targetPath>react</targetPath>
+                    </resource>
+                </webResources>
+            </configuration>
         </plugin>
 
         <!-- テスト実行 -->
