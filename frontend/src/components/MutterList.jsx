@@ -33,6 +33,13 @@ function MutterCard({ mutter, user, editable, onEdit, onDelete }) {
     }
   }
 
+  async function handleFollowClick() {
+    if (followed && !window.confirm("フォローを解除しますか？")) {
+      return;
+    }
+    await handleFollow();
+  }
+
   return (
     <article className="mutter-card">
       <div className="mutter-meta">
@@ -45,7 +52,14 @@ function MutterCard({ mutter, user, editable, onEdit, onDelete }) {
           {liked ? "♥" : "♡"} {likeCount}
         </button>
         {user?.id !== mutter.userId && (
-          <button type="button" onClick={handleFollow}>{followed ? "フォロー中" : "フォロー"}</button>
+          <button
+            type="button"
+            onClick={handleFollowClick}
+            title={followed ? "クリックするとフォローを解除します" : "クリックするとフォローします"}
+            style={followed ? { backgroundColor: "#dbeafe", color: "#1d4ed8", borderColor: "#60a5fa" } : undefined}
+          >
+            {followed ? "フォロー解除" : "フォロー"}
+          </button>
         )}
         {editable && (
           <>
