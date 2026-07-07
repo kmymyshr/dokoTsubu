@@ -69,6 +69,18 @@
             <version>5.23.0</version>
             <scope>test</scope>
         </dependency>
+        <!--
+            DAOの特性テスト(Characterization Test)用。本番はWEB-INF/lib配下に手動配置した
+            h2-2.4.240.jarで動いているため、同一バージョンをtestスコープで追加し、
+            埋め込みH2(jdbc:h2:mem:...)に対して現状のDAO挙動をテストできるようにする。
+            (モダナイゼーション計画 Phase0: 安全網構築)
+        -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <version>2.4.240</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
  <build>
