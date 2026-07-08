@@ -117,13 +117,10 @@ class MutterDAOCharacterizationTest {
     }
 
     @Test
-    void create_doesNotEnforceForeignKeyOnUserId() {
-        // MUTTERS.USER_IDに外部キー制約は無いため、存在しないユーザーIDでも
-        // INSERT自体は成功してしまう(参照整合性がDB側で保証されていない)。
-        // クリーンアーキテクチャ化の際にドメイン層でのバリデーション追加を検討する対象として記録。
+    void create_rejectsUnknownUserIdByForeignKey() {
         boolean created = mutterDAO.create(new Mutter(999999, "orphan mutter"));
 
-        assertTrue(created);
+        assertFalse(created);
     }
 
     @Test

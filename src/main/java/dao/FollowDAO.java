@@ -17,7 +17,6 @@ public class FollowDAO {
      * すでにフォロー済みなら解除し、まだなら追加する。
      */
     public boolean toggleFollow(int followerId, int followeeId) {
-        ensureSchema();
         try (Connection conn = DBUtil.getConnection()) {
             if (isFollowing(conn, followerId, followeeId)) {
                 return unfollow(conn, followerId, followeeId);
@@ -30,7 +29,6 @@ public class FollowDAO {
     }
 
     public boolean follow(int followerId, int followeeId) {
-        ensureSchema();
         try (Connection conn = DBUtil.getConnection()) {
             return follow(conn, followerId, followeeId);
         } catch (SQLException e) {
@@ -40,7 +38,6 @@ public class FollowDAO {
     }
 
     public boolean unfollow(int followerId, int followeeId) {
-        ensureSchema();
         try (Connection conn = DBUtil.getConnection()) {
             return unfollow(conn, followerId, followeeId);
         } catch (SQLException e) {
@@ -50,7 +47,6 @@ public class FollowDAO {
     }
 
     public boolean isFollowing(int followerId, int followeeId) {
-        ensureSchema();
         try (Connection conn = DBUtil.getConnection()) {
             return isFollowing(conn, followerId, followeeId);
         } catch (SQLException e) {
@@ -60,7 +56,6 @@ public class FollowDAO {
     }
 
     public int countFollowers(int userId) {
-        ensureSchema();
         String sql = "SELECT COUNT(*) FROM FOLLOWS WHERE FOLLOWEE_ID = ?";
         try (Connection conn = DBUtil.getConnection();
                 PreparedStatement pStmt = conn.prepareStatement(sql)) {
@@ -75,7 +70,6 @@ public class FollowDAO {
     }
 
     public int countFollowing(int userId) {
-        ensureSchema();
         String sql = "SELECT COUNT(*) FROM FOLLOWS WHERE FOLLOWER_ID = ?";
         try (Connection conn = DBUtil.getConnection();
                 PreparedStatement pStmt = conn.prepareStatement(sql)) {
@@ -90,7 +84,6 @@ public class FollowDAO {
     }
 
     public List<User> findFollowingUsers(int userId) {
-        ensureSchema();
         String sql = "SELECT U.ID, U.NAME, U.PASS, U.BIO "
                 + "FROM FOLLOWS F "
                 + "JOIN USERS U ON F.FOLLOWEE_ID = U.ID "
@@ -117,7 +110,6 @@ public class FollowDAO {
     }
 
     public List<User> findFollowerUsers(int userId) {
-        ensureSchema();
         String sql = "SELECT U.ID, U.NAME, U.PASS, U.BIO "
                 + "FROM FOLLOWS F "
                 + "JOIN USERS U ON F.FOLLOWER_ID = U.ID "
@@ -169,21 +161,6 @@ public class FollowDAO {
             try (ResultSet rs = pStmt.executeQuery()) {
                 return rs.next();
             }
-        }
-    }
-
-    private void ensureSchema() {
-        String sql = "CREATE TABLE IF NOT EXISTS FOLLOWS "
-                + "(ID INT AUTO_INCREMENT PRIMARY KEY, "
-                + "FOLLOWER_ID INT NOT NULL, "
-                + "FOLLOWEE_ID INT NOT NULL, "
-                + "CREATED_AT TIMESTAMP DEFAULT CURRENT_TIMESTAMP, "
-                + "UNIQUE(FOLLOWER_ID, FOLLOWEE_ID))";
-        try (Connection conn = DBUtil.getConnection();
-                PreparedStatement pStmt = conn.prepareStatement(sql)) {
-            pStmt.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
         }
     }
 }

@@ -56,6 +56,12 @@
             <groupId>com.fasterxml.jackson.datatype</groupId>
             <artifactId>jackson-datatype-jsr310</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>42.7.13</version>
+            <scope>runtime</scope>
+        </dependency>
         <!-- 単体テスト -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -138,6 +144,7 @@
             <artifactId>maven-war-plugin</artifactId>
             <version>3.5.1</version>
             <configuration>
+                <packagingExcludes>WEB-INF/lib/h2-*.jar</packagingExcludes>
                 <webResources>
                     <resource>
                         <directory>${project.build.directory}/frontend-dist</directory>

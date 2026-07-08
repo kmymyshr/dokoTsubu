@@ -14,7 +14,6 @@ public class LikeDAO {
      * すでにいいね済みなら削除し、まだなら追加する。
      */
     public boolean toggleLike(int mutterId, int userId) {
-        ensureSchema();
         try (Connection conn = DBUtil.getConnection()) {
             if (hasLiked(conn, mutterId, userId)) {
                 return removeLike(conn, mutterId, userId);
@@ -27,7 +26,6 @@ public class LikeDAO {
     }
 
     public boolean addLike(int mutterId, int userId) {
-        ensureSchema();
         try (Connection conn = DBUtil.getConnection()) {
             return addLike(conn, mutterId, userId);
         } catch (SQLException e) {
@@ -37,7 +35,6 @@ public class LikeDAO {
     }
 
     public boolean removeLike(int mutterId, int userId) {
-        ensureSchema();
         try (Connection conn = DBUtil.getConnection()) {
             return removeLike(conn, mutterId, userId);
         } catch (SQLException e) {
@@ -47,7 +44,6 @@ public class LikeDAO {
     }
 
     public boolean hasLiked(int mutterId, int userId) {
-        ensureSchema();
         try (Connection conn = DBUtil.getConnection()) {
             return hasLiked(conn, mutterId, userId);
         } catch (SQLException e) {
@@ -57,7 +53,6 @@ public class LikeDAO {
     }
 
     public int countLikes(int mutterId) {
-        ensureSchema();
         String sql = "SELECT COUNT(*) FROM MUTTER_LIKES WHERE MUTTER_ID = ?";
         try (Connection conn = DBUtil.getConnection();
                 PreparedStatement pStmt = conn.prepareStatement(sql)) {
@@ -97,21 +92,6 @@ public class LikeDAO {
             try (ResultSet rs = pStmt.executeQuery()) {
                 return rs.next();
             }
-        }
-    }
-
-    private void ensureSchema() {
-        String sql = "CREATE TABLE IF NOT EXISTS MUTTER_LIKES "
-                + "(ID INT AUTO_INCREMENT PRIMARY KEY, "
-                + "MUTTER_ID INT NOT NULL, "
-                + "USER_ID INT NOT NULL, "
-                + "CREATED_AT TIMESTAMP DEFAULT CURRENT_TIMESTAMP, "
-                + "UNIQUE(MUTTER_ID, USER_ID))";
-        try (Connection conn = DBUtil.getConnection();
-                PreparedStatement pStmt = conn.prepareStatement(sql)) {
-            pStmt.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
         }
     }
 }

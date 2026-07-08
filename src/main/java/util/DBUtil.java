@@ -15,18 +15,19 @@ public class DBUtil {
     private static final String DEFAULT_DB_USER = "sa";
     private static final String DEFAULT_DB_PASS = "";
 
-    static {
-        try {
-            Class.forName("org.h2.Driver");
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException("H2ドライバが見つかりません。", e);
-        }
+    public static Connection getConnection() throws SQLException {
+        String url = getSetting("db.url", "DB_URL", DEFAULT_JDBC_URL);
+        String user = getSetting("db.user", "DB_USER", DEFAULT_DB_USER);
+        String password = getSetting("db.password", "DB_PASSWORD", DEFAULT_DB_PASS);
+        return DriverManager.getConnection(url, user, password);
     }
 
-    public static Connection getConnection() throws SQLException {
-        String url = System.getProperty("db.url", DEFAULT_JDBC_URL);
-        String user = System.getProperty("db.user", DEFAULT_DB_USER);
-        String password = System.getProperty("db.password", DEFAULT_DB_PASS);
-        return DriverManager.getConnection(url, user, password);
+    private static String getSetting(String systemProperty, String environmentVariable, String defaultValue) {
+        String propertyValue = System.getProperty(systemProperty);
+        if (propertyValue != null && !propertyValue.isBlank()) {
+            return propertyValue;
+        }
+        String environmentValue = System.getenv(environmentVariable);
+        return environmentValue == null || environmentValue.isBlank() ? defaultValue : environmentValue;
     }
 }

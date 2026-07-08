@@ -30,7 +30,7 @@ Java Servlet / JSP と React を組み合わせた、ひとこと投稿アプリ
 | Web | Jakarta Servlet 6.0 / JSP |
 | フロントエンド | React 19 / Vite 8 |
 | ビルド | Maven / frontend-maven-plugin |
-| DB | H2 Database |
+| DB | PostgreSQL（公開環境）/ H2（移行元・テスト） |
 | JSON | Jackson |
 | パスワード | jBCrypt |
 | テスト | JUnit 5 / Mockito / Vitest |
@@ -48,7 +48,7 @@ Browser
         ↓
        DAO
         ↓
-    H2 Database
+    PostgreSQL
 ```
 
 役割は次のように分けています。
@@ -191,6 +191,87 @@ WHERE ID = ? AND USER_ID = ? AND VERSION = ?
 
 `MUTTER_LIKES` と `FOLLOWS` は一意制約で重複登録を防いでいます。
 
+### PostgreSQL移行時の堅牢化
+
+公開環境では、アプリの入力チェックだけに依存せず、データベースでも参照整合性を保証します。
+
+- `MUTTERS.USER_ID` は存在する `USERS.ID` のみ参照可能
+- `MUTTER_LIKES` は存在する投稿・ユーザーのみ参照可能
+- `FOLLOWS` は存在するフォロワー・フォロー対象のみ参照可能
+- いいね・フォローの組み合わせは複合UNIQUE制約で重複不可
+- 全テーブルの `CREATED_AT` を `NOT NULL` とし、作成日時の欠落を防止
+- 投稿削除時は関連するいいねを `ON DELETE CASCADE` で削除
+- ユーザー削除時は関連するフォロー関係を `ON DELETE CASCADE` で削除
+
+外部キーは、バグや管理操作によって「存在しないユーザーの投稿」のような孤児データが作られることを最後の砦として防ぎます。`NOT NULL` は日時を前提とする並び替えや監査処理を単純かつ確実にします。制約付きの初期スキーマは `src/main/resources/db/migration/V1__initial_postgresql_schema.sql` に置いています。
+
+DAOがリクエストごとにDDLを実行する方式は廃止しました。スキーマ変更をバージョン管理されたSQLへ集約することで、ローカル・検証・公開環境で同じ定義を再現できます。このファイル名はFlywayのバージョン付きマイグレーション規則にも対応しています。
+
+## H2からPostgreSQLへのデータ移行
+
+GitHubはソースコードの保管・共有先であり、JavaアプリやPostgreSQLを常時実行するデプロイ先ではありません。現時点ではデプロイ先に依存しないSQLと接続設定を用意し、実行環境が決まったら同じ手順を適用します。DBパスワードやCSVはGitHubへ登録しないでください。
+
+### 1. H2データを検査する
+
+H2コンソールで `db/migration/h2_pre_migration_checks.sql` を実行します。全ての `INVALID_COUNT` が `0` であることを確認してください。
+
+NULLの作成日時だけが見つかった場合は、日時が不明になることを了承したうえで次のように補完できます。
+
+```sql
+UPDATE MUTTER_LIKES SET CREATED_AT = CURRENT_TIMESTAMP WHERE CREATED_AT IS NULL;
+UPDATE FOLLOWS SET CREATED_AT = CURRENT_TIMESTAMP WHERE CREATED_AT IS NULL;
+```
+
+孤児データが見つかった場合は機械的に削除せず、対象行を確認して、正しい親IDへの修正または不要行の削除を判断します。
+
+### 2. H2からCSVを出力する
+
+先にリポジトリ直下へ `migration-export` ディレクトリを作り、H2コンソールで以下を実行します。`C:/absolute/path/...` は実際の絶対パスへ置き換えてください。
+
+```sql
+CALL CSVWRITE('C:/absolute/path/migration-export/users.csv',
+  'SELECT ID, NAME, PASS, BIO FROM USERS ORDER BY ID');
+CALL CSVWRITE('C:/absolute/path/migration-export/mutters.csv',
+  'SELECT ID, USER_ID, TEXT, VERSION, CREATED_AT FROM MUTTERS ORDER BY ID');
+CALL CSVWRITE('C:/absolute/path/migration-export/mutter_likes.csv',
+  'SELECT ID, MUTTER_ID, USER_ID, CREATED_AT FROM MUTTER_LIKES ORDER BY ID');
+CALL CSVWRITE('C:/absolute/path/migration-export/follows.csv',
+  'SELECT ID, FOLLOWER_ID, FOLLOWEE_ID, CREATED_AT FROM FOLLOWS ORDER BY ID');
+```
+
+`migration-export/` は `.gitignore` に登録済みです。
+
+### 3. PostgreSQLへ初期スキーマを作る
+
+空のデータベースに対して次を実行します。
+
+```sh
+psql "$DATABASE_URL" -f src/main/resources/db/migration/V1__initial_postgresql_schema.sql
+```
+
+### 4. 親テーブルから順番にCSVを取り込む
+
+`psql` に接続し、ファイルパスを置き換えて実行します。
+
+```sql
+\copy users (id, name, pass, bio) FROM 'migration-export/users.csv' WITH (FORMAT csv, HEADER true)
+\copy mutters (id, user_id, text, version, created_at) FROM 'migration-export/mutters.csv' WITH (FORMAT csv, HEADER true)
+\copy mutter_likes (id, mutter_id, user_id, created_at) FROM 'migration-export/mutter_likes.csv' WITH (FORMAT csv, HEADER true)
+\copy follows (id, follower_id, followee_id, created_at) FROM 'migration-export/follows.csv' WITH (FORMAT csv, HEADER true)
+```
+
+`users → mutters → mutter_likes/follows` の順にすることで、外部キー制約を無効化せず移行できます。制約違反で停止した場合はH2側の不整合を修正してからやり直します。
+
+### 5. 自動採番と件数を検証する
+
+CSVではIDを明示的に取り込むため、最後に次を実行してPostgreSQLの採番位置を調整し、件数を確認します。
+
+```sh
+psql "$DATABASE_URL" -f db/migration/postgresql_post_import.sql
+```
+
+移行元で確認した目安は `USERS=32`、`MUTTERS=55`、`MUTTER_LIKES=28`、`FOLLOWS=16` です。移行直前にH2で再集計した件数を正として照合してください。
+
 ## セットアップ
 
 前提:
@@ -198,7 +279,7 @@ WHERE ID = ? AND USER_ID = ? AND VERSION = ?
 - JDK 17
 - Maven
 - Tomcat 10.1 系など Servlet 6.0 対応コンテナ
-- H2 Database サーバー
+- PostgreSQL（公開環境）またはH2 Databaseサーバー（従来のローカル環境）
 
 H2 接続設定:
 
@@ -207,6 +288,16 @@ jdbc:h2:tcp://localhost/~/dokoTsubu
 user: sa
 password: なし
 ```
+
+PostgreSQL接続設定は、公開環境のSecretまたはローカルの環境変数へ設定します。
+
+```text
+DB_URL=jdbc:postgresql://localhost:5432/dokotsubu
+DB_USER=dokotsubu_app
+DB_PASSWORD=推測困難なパスワード
+```
+
+Javaのシステムプロパティ `db.url` / `db.user` / `db.password` はテスト用途として引き続き環境変数より優先されます。未設定時のみ従来のローカルH2へ接続します。
 
 ## ビルド
 
