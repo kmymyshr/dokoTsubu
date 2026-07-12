@@ -65,7 +65,9 @@ Browser
 ## ディレクトリ構成
 
 ```text
-firstSampleRepository/
+dokoTsubu/
+├─ db/
+│  └─ migration/
 ├─ frontend/
 │  ├─ src/
 │  │  ├─ components/
@@ -86,6 +88,7 @@ firstSampleRepository/
 │  ├─ index.jsp
 │  └─ WEB-INF/jsp/
 ├─ src/test/java/
+├─ .gitignore
 ├─ pom.xml
 └─ README.md
 ```
@@ -239,14 +242,22 @@ CALL CSVWRITE('C:/absolute/path/migration-export/follows.csv',
   'SELECT ID, FOLLOWER_ID, FOLLOWEE_ID, CREATED_AT FROM FOLLOWS ORDER BY ID');
 ```
 
-`migration-export/` は `.gitignore` に登録済みです。
+`migration-export/` は `.gitignore` に登録済みです。移行用CSVにはユーザー情報やパスワードハッシュが含まれるため、GitHubへ登録しないでください。
+
+Windows環境では、H2のCSV出力や `psql` のクライアント文字コードがShift_JIS系になることがあります。PostgreSQLへ取り込む前に、CSVをUTF-8へ変換し、`psql` 側でも次を指定してから `\copy` すると安定します。
+
+```sql
+\encoding UTF8
+```
+
+また、CSVフィールド内に改行を含む自己紹介文などがある場合は、単純な行単位変換ではCSV構造が崩れることがあります。CSVとして読み取り、CSVとしてUTF-8再出力する方法で変換してください。
 
 ### 3. PostgreSQLへ初期スキーマを作る
 
 空のデータベースに対して次を実行します。
 
 ```sh
-psql "$DATABASE_URL" -f src/main/resources/db/migration/V1__initial_postgresql_schema.sql
+psql -U dokotsubu_app -d dokotsubu -h localhost -f src/main/resources/db/migration/V1__initial_postgresql_schema.sql
 ```
 
 ### 4. 親テーブルから順番にCSVを取り込む
@@ -254,6 +265,7 @@ psql "$DATABASE_URL" -f src/main/resources/db/migration/V1__initial_postgresql_s
 `psql` に接続し、ファイルパスを置き換えて実行します。
 
 ```sql
+\encoding UTF8
 \copy users (id, name, pass, bio) FROM 'migration-export/users.csv' WITH (FORMAT csv, HEADER true)
 \copy mutters (id, user_id, text, version, created_at) FROM 'migration-export/mutters.csv' WITH (FORMAT csv, HEADER true)
 \copy mutter_likes (id, mutter_id, user_id, created_at) FROM 'migration-export/mutter_likes.csv' WITH (FORMAT csv, HEADER true)
@@ -262,15 +274,21 @@ psql "$DATABASE_URL" -f src/main/resources/db/migration/V1__initial_postgresql_s
 
 `users → mutters → mutter_likes/follows` の順にすることで、外部キー制約を無効化せず移行できます。制約違反で停止した場合はH2側の不整合を修正してからやり直します。
 
+`mutters.csv` に `VERSION` 列が出力されていない場合は、取り込み列から `version` を外し、PostgreSQL側の既定値 `0` を使います。
+
+```sql
+\copy mutters (id, user_id, text, created_at) FROM 'migration-export/mutters.csv' WITH (FORMAT csv, HEADER true)
+```
+
 ### 5. 自動採番と件数を検証する
 
 CSVではIDを明示的に取り込むため、最後に次を実行してPostgreSQLの採番位置を調整し、件数を確認します。
 
 ```sh
-psql "$DATABASE_URL" -f db/migration/postgresql_post_import.sql
+psql -U dokotsubu_app -d dokotsubu -h localhost -f db/migration/postgresql_post_import.sql
 ```
 
-移行元で確認した目安は `USERS=32`、`MUTTERS=55`、`MUTTER_LIKES=28`、`FOLLOWS=16` です。移行直前にH2で再集計した件数を正として照合してください。
+移行元で確認した目安は `USERS=32`、`MUTTERS=52`、`MUTTER_LIKES=28`、`FOLLOWS=16` です。`MUTTERS=52` は、外部キー追加前の検査で見つかった孤児投稿3件を削除した後の件数です。移行直前にH2で再集計した件数を正として照合してください。
 
 ## セットアップ
 
@@ -278,7 +296,7 @@ psql "$DATABASE_URL" -f db/migration/postgresql_post_import.sql
 
 - JDK 17
 - Maven
-- Tomcat 10.1 系など Servlet 6.0 対応コンテナ
+- Tomcat 10.1 / 11 系など Jakarta Servlet 対応コンテナ
 - PostgreSQL（公開環境）またはH2 Databaseサーバー（従来のローカル環境）
 
 H2 接続設定:
@@ -299,6 +317,11 @@ DB_PASSWORD=推測困難なパスワード
 
 Javaのシステムプロパティ `db.url` / `db.user` / `db.password` はテスト用途として引き続き環境変数より優先されます。未設定時のみ従来のローカルH2へ接続します。
 
+PostgreSQL接続時は、Tomcat上でJDBCドライバの自動検出が効かない場合に備えて、`DBUtil` がURLに応じてドライバを明示ロードします。
+
+- `jdbc:postgresql:` → `org.postgresql.Driver`
+- `jdbc:h2:` → `org.h2.Driver`
+
 ## ビルド
 
 ```sh
@@ -317,6 +340,43 @@ Tomcat に配置した場合の想定 URL:
 
 ```text
 http://localhost:8080/dokoTsubu/
+```
+
+### ローカルTomcat 11での起動例
+
+Pleiades同梱Tomcat 11を使う場合の例です。環境に合わせてパスは読み替えてください。
+
+```powershell
+$env:JAVA_HOME="C:\pleiades\2025-12\java\21"
+$env:Path="$env:JAVA_HOME\bin;$env:Path"
+
+$env:DB_URL="jdbc:postgresql://localhost:5432/dokotsubu"
+$env:DB_USER="dokotsubu_app"
+$env:DB_PASSWORD="your_password"
+```
+
+WARをビルドします。
+
+```powershell
+mvn clean package
+```
+
+Tomcatを停止したうえで、WARを `webapps` 直下へ配置します。展開済みフォルダが残っている場合は削除してから置き換えると確実です。
+
+```powershell
+Remove-Item "C:\pleiades\2025-12\tomcat\11\webapps\dokoTsubu" -Recurse -Force
+
+Copy-Item `
+  "C:\Users\kmymy\VScode\Workspace\dokoTsubu\target\dokoTsubu.war" `
+  "C:\pleiades\2025-12\tomcat\11\webapps\dokoTsubu.war" `
+  -Force
+```
+
+起動ログを同じPowerShellに表示したい場合は、`startup.bat` ではなく `catalina.bat run` を使います。環境変数も同じPowerShellから渡せるため、接続確認時に便利です。
+
+```powershell
+cd "C:\pleiades\2025-12\tomcat\11\bin"
+.\catalina.bat run
 ```
 
 ## テスト
