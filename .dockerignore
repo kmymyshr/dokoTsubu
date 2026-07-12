@@ -1,18 +1,24 @@
+# Maven build artifacts
+/target/
 /build/
 /bin/
-/target/
 *.class
 
-# Eclipse
+# Local IDE / OS files
+.git/
+.vscode/
+.agents/
 .settings/
 .project
 .classpath
-
-# OS
 .DS_Store
 Thumbs.db
+
+# Frontend local dependencies/cache
 .frontend/
 frontend/node_modules/
+
+# Local DB migration exports / dumps
 migration-export/
 sample_data.sql
 *.dump
