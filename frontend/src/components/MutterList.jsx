@@ -2,8 +2,13 @@ import { useState } from "react";
 import { likeMutter, followUser } from "../api";
 
 function formatDate(value) {
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "" : date.toLocaleString("ja-JP");
+  const valueWithTimezone = value && !/[zZ]|[+-]\d{2}:\d{2}$/.test(value)
+    ? `${value}Z`
+    : value;
+  const date = new Date(valueWithTimezone);
+  return Number.isNaN(date.getTime())
+    ? ""
+    : date.toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" });
 }
 
 function MutterCard({
