@@ -24,10 +24,15 @@ export default function App() {
   const [olderPagesLoaded, setOlderPagesLoaded] = useState(false);
   const [editing, setEditing] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [message, setMessage] = useState(null);
 
   const loadPage = useCallback(async ({ append = false, search = keyword, silent = false } = {}) => {
-    setLoading(true);
+    if (silent) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
     try {
       const result = await fetchMutterPage({
         keyword: search,
@@ -53,7 +58,11 @@ export default function App() {
       if (!silent) setMessage({ text: error.message, error: true });
       console.error(error);
     } finally {
-      setLoading(false);
+      if (silent) {
+        setRefreshing(false);
+      } else {
+        setLoading(false);
+      }
     }
   }, [keyword, page.nextCursor]);
 
@@ -148,7 +157,7 @@ export default function App() {
                     onFollowChange={(userId, following) => {
                       setFollowStateByUserId(current => ({ ...current, [userId]: following }));
                     }}
-                    loading={loading} hasNext={page.hasNext}
+                    loading={loading || refreshing} hasNext={page.hasNext}
                     onRefresh={() => { setOlderPagesLoaded(false); loadPage(); }}
                     onLoadMore={() => loadPage({ append: true })}
                     onEdit={setEditing} onDelete={handleDelete} />
