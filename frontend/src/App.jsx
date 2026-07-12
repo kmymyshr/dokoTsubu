@@ -157,7 +157,7 @@ export default function App() {
                     onFollowChange={(userId, following) => {
                       setFollowStateByUserId(current => ({ ...current, [userId]: following }));
                     }}
-                    loading={loading || refreshing} hasNext={page.hasNext}
+                    loading={loading} hasNext={page.hasNext}
                     onRefresh={() => { setOlderPagesLoaded(false); loadPage(); }}
                     onLoadMore={() => loadPage({ append: true })}
                     onEdit={setEditing} onDelete={handleDelete} />
