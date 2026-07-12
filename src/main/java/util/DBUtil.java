@@ -19,7 +19,20 @@ public class DBUtil {
         String url = getSetting("db.url", "DB_URL", DEFAULT_JDBC_URL);
         String user = getSetting("db.user", "DB_USER", DEFAULT_DB_USER);
         String password = getSetting("db.password", "DB_PASSWORD", DEFAULT_DB_PASS);
+        loadDriver(url);
         return DriverManager.getConnection(url, user, password);
+    }
+
+    private static void loadDriver(String url) throws SQLException {
+        try {
+            if (url.startsWith("jdbc:postgresql:")) {
+                Class.forName("org.postgresql.Driver");
+            } else if (url.startsWith("jdbc:h2:")) {
+                Class.forName("org.h2.Driver");
+            }
+        } catch (ClassNotFoundException e) {
+            throw new SQLException("JDBC driver not found for URL: " + url, e);
+        }
     }
 
     private static String getSetting(String systemProperty, String environmentVariable, String defaultValue) {
