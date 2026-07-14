@@ -12,7 +12,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import model.GetMutterListLogic;
-import model.MutterPage;
+import model.MutterFeedPage;
 import model.User;
 import util.ObjectMapperFactory;
 
@@ -47,15 +47,11 @@ public class MutterList extends HttpServlet {
 
 		// 3. limit を整えて、つぶやき一覧を取得する。
 		int limit = parseLimit(request.getParameter("limit"));
-		MutterPage page = new GetMutterListLogic().execute(cursor, limit);
-		// つぶやきごとにいいね情報を付与してから返す
-		java.util.List<dto.MutterResponse> responseList = page.getMutters().stream()
-				.map(m -> {
-					int likeCount = new dao.LikeDAO().countLikes(m.getId());
-					boolean likedByMe = new dao.LikeDAO().hasLiked(m.getId(), loginUser.getId());
-					boolean followedByMe = new dao.FollowDAO().isFollowing(loginUser.getId(), m.getUserId());
-					return dto.MutterResponse.from(m, likeCount, likedByMe, followedByMe);
-				})
+		MutterFeedPage page = new GetMutterListLogic()
+				.executeFeed(null, cursor, limit, loginUser.getId());
+		// 1回の一覧SQLで取得済みのいいね・フォロー情報をレスポンスへ変換する
+		java.util.List<dto.MutterResponse> responseList = page.items().stream()
+				.map(dto.MutterResponse::from)
 				.toList();
 		MutterListResponse responseBody = MutterListResponse.from(responseList, page);
 

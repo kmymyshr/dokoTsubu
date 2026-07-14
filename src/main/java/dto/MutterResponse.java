@@ -3,6 +3,7 @@ package dto;
 import java.time.LocalDateTime;
 
 import model.Mutter;
+import model.MutterFeedItem;
 
 /** つぶやき1件分のJSONレスポンス（いいね情報を含む）。 */
 public record MutterResponse(
@@ -27,5 +28,9 @@ public record MutterResponse(
 				likeCount,
 				likedByMe,
 				followedByMe);
+	}
+
+	public static MutterResponse from(MutterFeedItem item) {
+		return from(item.mutter(), item.likeCount(), item.likedByMe(), item.followedByMe());
 	}
 }

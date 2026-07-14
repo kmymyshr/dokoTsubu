@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import model.Mutter;
+import model.MutterFeedItem;
 import util.DBUtil;
 
 public class MutterDAO {
@@ -97,6 +98,50 @@ public class MutterDAO {
 			throw new RuntimeException("つぶやき一覧の取得に失敗しました。", e);
 		}
 		return mutterList;
+	}
+
+	/**
+	 * Fetches a feed page and its viewer-specific display data in one SQL statement.
+	 */
+	public List<MutterFeedItem> findFeedPage(
+			String keyword, Integer cursor, int limit, int viewerId) {
+		List<MutterFeedItem> items = new ArrayList<>();
+		StringBuilder sql = new StringBuilder(
+				"WITH page AS ("
+				+ "SELECT m.ID, m.USER_ID, u.NAME, m.TEXT, m.VERSION, m.CREATED_AT "
+				+ "FROM MUTTERS m JOIN USERS u ON m.USER_ID = u.ID WHERE 1 = 1 ");
+		if (keyword != null) sql.append("AND m.TEXT LIKE ? ");
+		if (cursor != null) sql.append("AND m.ID < ? ");
+		sql.append("ORDER BY m.ID DESC LIMIT ?) ")
+				.append("SELECT p.ID, p.USER_ID, p.NAME, p.TEXT, p.VERSION, p.CREATED_AT, ")
+				.append("(SELECT COUNT(*) FROM MUTTER_LIKES ml WHERE ml.MUTTER_ID = p.ID) AS LIKE_COUNT, ")
+				.append("EXISTS (SELECT 1 FROM MUTTER_LIKES my_like ")
+				.append("WHERE my_like.MUTTER_ID = p.ID AND my_like.USER_ID = ?) AS LIKED_BY_ME, ")
+				.append("EXISTS (SELECT 1 FROM FOLLOWS f ")
+				.append("WHERE f.FOLLOWER_ID = ? AND f.FOLLOWEE_ID = p.USER_ID) AS FOLLOWED_BY_ME ")
+				.append("FROM page p ORDER BY p.ID DESC");
+
+		try (Connection conn = DBUtil.getConnection();
+				PreparedStatement pStmt = conn.prepareStatement(sql.toString())) {
+			int index = 1;
+			if (keyword != null) pStmt.setString(index++, "%" + keyword + "%");
+			if (cursor != null) pStmt.setInt(index++, cursor);
+			pStmt.setInt(index++, limit);
+			pStmt.setInt(index++, viewerId);
+			pStmt.setInt(index, viewerId);
+			try (ResultSet rs = pStmt.executeQuery()) {
+				while (rs.next()) {
+					items.add(new MutterFeedItem(
+							toMutter(rs),
+							rs.getInt("LIKE_COUNT"),
+							rs.getBoolean("LIKED_BY_ME"),
+							rs.getBoolean("FOLLOWED_BY_ME")));
+				}
+			}
+		} catch (SQLException e) {
+			throw new RuntimeException("Failed to fetch the mutter feed", e);
+		}
+		return items;
 	}
 
 	/**

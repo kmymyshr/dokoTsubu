@@ -440,6 +440,8 @@ Render は Docker Web Service として設定します。
 DB_URL=jdbc:postgresql://aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres?sslmode=require
 DB_USER=postgres.<supabase-project-ref>
 DB_PASSWORD=<your-supabase-db-password>
+# 任意。未指定時は10
+DB_MAXIMUM_POOL_SIZE=10
 ```
 
 実際のデータベースパスワード、エクスポート済み CSV、実ユーザーを含む SQL ダンプ、`.env` ファイルはコミットしないでください。
@@ -606,10 +608,8 @@ mvn test
 - 特性テストの範囲拡大（JSP/フォーム経由の旧Servlet、`model/*Logic`の単体テスト）
 - CSRF保護対象URLの見直し（`/LikeMutter`, `/FollowUser`を含める）
 - Repositoryインターフェース導入によるレイヤー境界の整理（Branch by Abstraction）
-- HikariCPによるコネクションプール導入
 - Flywayによるスキーマのコード管理化
 - Spring Data JDBCへの置き換え、Spring Boot化
-- `/api/mutters`一覧取得のN+1クエリ解消（1クエリJOIN化）
 - LIKE検索の`%`/`_`エスケープ対応
 - Spring Securityによる認証/CSRFの置き換え
 - 旧UI（JSP + vanilla JS）のReact統合と旧コードの撤去
@@ -685,14 +685,14 @@ mvn test
 - `Repository`インターフェースの導入（`MutterRepository`, `UserRepository`, `LikeRepository`, `FollowRepository`）。既存DAOをラップし、レイヤー境界だけ先に導入する。
 - `model/*Logic`のパススルークラスを意味のあるユースケース単位（`PostMutterUseCase`等）に再編。
 
-**4. 基盤の入れ替え（未着手）**
-- HikariCPによるコネクションプール導入(現状は`DriverManager`で毎回新規接続)。
+**4. 基盤の入れ替え（進行中）**
+- HikariCPによるコネクションプールを導入済み。最大プールサイズは`DB_MAXIMUM_POOL_SIZE`（既定値10）で調整できる。
 - Flywayによるスキーマのコード管理化。特に`MUTTERS`テーブルの実際の定義を本番DBで確認し、`TestDatabaseSupport`で推測したスキーマとの差異を解消する。
 - 各DAOの`ensureSchema()`（毎リクエストでの`CREATE TABLE IF NOT EXISTS`実行）を廃止。
 
-**5. 永続層・APIエンドポイントの移行（未着手）**
+**5. 永続層・APIエンドポイントの移行（進行中）**
 - DAOをSpring Data JDBC実装へ置き換え。
-- `MutterApiServlet`一覧取得のN+1クエリ解消（1クエリJOIN化）。整備済みの特性テストで回帰を検知する。
+- `MutterApiServlet`と旧`MutterList`の一覧取得は、いいね数・いいね済み・フォロー済みを含む1 SQLへ統合済み。
 - `MutterDAO.findPage`/`search`のLIKE検索がキーワード中の`%`/`_`をエスケープしていない問題への対応要否を判断。
 - `MUTTERS.USER_ID`等に外部キー制約が無い問題への対応要否を判断（PostgreSQL側は対応済み、H2側は未対応）。
 

@@ -3,6 +3,7 @@ package dto;
 import java.util.List;
 
 import model.MutterPage;
+import model.MutterFeedPage;
 
 /** カーソルページネーションを含む一覧APIのJSONレスポンス。 */
 public record MutterListResponse(
@@ -15,5 +16,9 @@ public record MutterListResponse(
 				mutters,
 				page.getNextCursor(),
 				page.isHasNext());
+	}
+
+	public static MutterListResponse from(List<MutterResponse> mutters, MutterFeedPage page) {
+		return new MutterListResponse(mutters, page.nextCursor(), page.hasNext());
 	}
 }

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createMutter, deleteMutter, fetchMutterPage, fetchSession, updateMutter } from "./api.js";
 import EditDialog from "./components/EditDialog.jsx";
 import Header from "./components/Header.jsx";
@@ -26,8 +26,11 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [message, setMessage] = useState(null);
+  const requestInFlight = useRef(false);
 
   const loadPage = useCallback(async ({ append = false, search = keyword, silent = false } = {}) => {
+    if (requestInFlight.current) return false;
+    requestInFlight.current = true;
     if (silent) {
       setRefreshing(true);
     } else {
@@ -58,6 +61,7 @@ export default function App() {
       if (!silent) setMessage({ text: error.message, error: true });
       console.error(error);
     } finally {
+      requestInFlight.current = false;
       if (silent) {
         setRefreshing(false);
       } else {
@@ -69,6 +73,7 @@ export default function App() {
   useEffect(() => {
     let active = true;
     async function initialize() {
+      requestInFlight.current = true;
       try {
         const sessionUser = await fetchSession();
         if (!active) return;
@@ -81,6 +86,7 @@ export default function App() {
       } catch (error) {
         if (active) setMessage({ text: error.message, error: true });
       } finally {
+        requestInFlight.current = false;
         if (active) setLoading(false);
       }
     }
@@ -90,7 +96,13 @@ export default function App() {
 
   useEffect(() => {
     const timer = window.setInterval(() => {
-      if (!keyword && !olderPagesLoaded && !editing) loadPage({ silent: true });
+      if (document.visibilityState === "visible"
+          && !requestInFlight.current
+          && !keyword
+          && !olderPagesLoaded
+          && !editing) {
+        loadPage({ silent: true });
+      }
     }, 5000);
     return () => window.clearInterval(timer);
   }, [keyword, olderPagesLoaded, editing, loadPage]);

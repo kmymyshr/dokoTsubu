@@ -18,7 +18,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import model.GetMutterListLogic;
 import model.Mutter;
-import model.MutterPage;
+import model.MutterFeedPage;
 import model.User;
 import util.ObjectMapperFactory;
 import validation.MutterInputValidator;
@@ -90,15 +90,10 @@ public class MutterApiServlet extends HttpServlet {
             return;
         }
         int limit = requestedLimit == null ? DEFAULT_LIMIT : Math.min(requestedLimit, MAX_LIMIT);
-        MutterPage page = new GetMutterListLogic().execute(keyword, cursor, limit);
-        // prepare MutterResponse list including like counts and liked flag
-        java.util.List<dto.MutterResponse> responseList = page.getMutters().stream()
-                .map(m -> {
-                    int likeCount = new LikeDAO().countLikes(m.getId());
-                    boolean likedByMe = new LikeDAO().hasLiked(m.getId(), loginUser.getId());
-                    boolean followedByMe = new dao.FollowDAO().isFollowing(loginUser.getId(), m.getUserId());
-                    return dto.MutterResponse.from(m, likeCount, likedByMe, followedByMe);
-                })
+        MutterFeedPage page = new GetMutterListLogic()
+                .executeFeed(keyword, cursor, limit, loginUser.getId());
+        java.util.List<dto.MutterResponse> responseList = page.items().stream()
+                .map(dto.MutterResponse::from)
                 .toList();
         writeJson(response, HttpServletResponse.SC_OK, MutterListResponse.from(responseList, page));
     }

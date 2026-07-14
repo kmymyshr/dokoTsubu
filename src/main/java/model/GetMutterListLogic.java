@@ -27,6 +27,18 @@ public class GetMutterListLogic {
 		return new MutterPage(mutters, nextCursor, hasNext);
 	}
 
+	/** Returns an enriched page without issuing per-mutter queries. */
+	public MutterFeedPage executeFeed(String keyword, Integer cursor, int limit, int viewerId) {
+		List<MutterFeedItem> fetched = new MutterDAO()
+				.findFeedPage(keyword, cursor, limit + 1, viewerId);
+		boolean hasNext = fetched.size() > limit;
+		List<MutterFeedItem> items = new java.util.ArrayList<>(
+				fetched.subList(0, Math.min(limit, fetched.size())));
+		Integer nextCursor = hasNext && !items.isEmpty()
+				? items.get(items.size() - 1).mutter().getId() : null;
+		return new MutterFeedPage(items, nextCursor, hasNext);
+	}
+
 	/**
 	 * 通常の一覧表示向けに、カーソル付きでつぶやき一覧を取得する。
 	 */

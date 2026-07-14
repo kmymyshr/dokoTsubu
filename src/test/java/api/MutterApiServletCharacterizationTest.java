@@ -174,6 +174,28 @@ class MutterApiServletCharacterizationTest {
     }
 
     @Test
+    void doGet_list_returnsAggregatedLikeAndFollowData() throws Exception {
+        User author = createUser("alice");
+        User viewer = createUser("bob");
+        User anotherUser = createUser("carol");
+        Mutter mutter = createMutter(author.getId(), "hello");
+        likeDAO.addLike(mutter.getId(), viewer.getId());
+        likeDAO.addLike(mutter.getId(), anotherUser.getId());
+        followDAO.follow(viewer.getId(), author.getId());
+
+        HttpServletRequest request = mockRequest(viewer);
+        HttpServletResponse response = mock(HttpServletResponse.class);
+        StringWriter body = captureResponseBody(response);
+
+        servlet.doGet(request, response);
+
+        JsonNode item = readJson(body).get("mutters").get(0);
+        assertEquals(2, item.get("likeCount").asInt());
+        assertTrue(item.get("likedByMe").asBoolean());
+        assertTrue(item.get("followedByMe").asBoolean());
+    }
+
+    @Test
     void doGet_list_returns400_onKeywordTooLong() throws Exception {
         User author = createUser("alice");
         HttpServletRequest request = mockRequest(author);
