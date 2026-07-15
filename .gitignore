@@ -14,6 +14,7 @@ Thumbs.db
 .frontend/
 frontend/node_modules/
 migration-export/
+/dokoTsubu-public/
 sample_data.sql
 *.dump
 *.sql.backup
