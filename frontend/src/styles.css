@@ -43,6 +43,21 @@ section, .mutter-card {
 .mutter-actions, .dialog-actions { justify-content: flex-end; }
 .load-more { width: 100%; }
 
+.follow-list {
+  padding-left: 0;
+  list-style: none;
+}
+
+.follow-list-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 8px 0;
+  padding: 10px 0;
+  border-bottom: 1px solid #edf0f3;
+}
+
 .dialog-backdrop {
   position: fixed;
   inset: 0;

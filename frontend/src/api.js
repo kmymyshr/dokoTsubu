@@ -99,3 +99,14 @@ export function followUser(followeeId) {
     body: JSON.stringify({ followeeId })
   });
 }
+
+/**
+ * フォロー中/フォロワー一覧を取得する。
+ *
+ * Phase9ではJSPが持っていた一覧描画をReactへ移すため、Phase8で追加した
+ * `/api/follows` をReact側の正式なデータ取得口として使う。
+ */
+export function fetchFollowList({ userId, type }) {
+  const query = new URLSearchParams({ userId, type });
+  return request(`/api/follows?${query}`);
+}

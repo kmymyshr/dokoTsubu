@@ -119,9 +119,16 @@ Phase8では、フォロー中/フォロワー一覧をReact化するためのAP
 - `/api/follows` でフォロー中/フォロワー一覧をJSONとして取得可能
 - `FollowListResponse` / `FollowUserSummaryResponse` で一覧表示用DTOを追加
 - `followerList.jsp` / `followingList.jsp` はJSP互換を維持しつつ、React化時の置き換え箇所が分かるようコメントを追加
-- `followList.js` は既存JSP画面の非同期フォロー操作に責務を限定
+- 既存JSP画面の非同期フォロー操作は `followList.js` に一時的に集約
 
-JSPはまだログイン、登録、プロフィール、フォロー一覧などに残っていますが、投稿タイムラインはReact + REST API中心の構成へ移行しています。
+Phase9では、フォロー中/フォロワー一覧の表示をReactへ移しました。
+
+- `FollowList` Reactコンポーネントを追加し、`/api/follows` のレスポンスで一覧を描画
+- `followerList.jsp` / `followingList.jsp` はReactホストへ縮小
+- `FollowerList` / `FollowingList` Servletは認証確認、対象ユーザー確認、Reactホストへのforwardに責務を縮小
+- 旧JSP用の `followList.js` は削除
+
+JSPはまだログイン、登録、プロフィールなどに残っていますが、投稿タイムラインとフォロー一覧はReact + REST API中心の構成へ移行しています。
 
 ## 主な機能
 

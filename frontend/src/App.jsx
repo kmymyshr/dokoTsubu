@@ -8,6 +8,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createMutter, deleteMutter, fetchMutterPage, fetchSession, updateMutter } from "./api.js";
 import EditDialog from "./components/EditDialog.jsx";
+import FollowList from "./components/FollowList.jsx";
 import Header from "./components/Header.jsx";
 import MutterList from "./components/MutterList.jsx";
 import PostForm from "./components/PostForm.jsx";
@@ -24,6 +25,9 @@ function buildFollowStateMap(mutters) {
 
 export default function App() {
   const contextPath = document.body.dataset.contextPath || "";
+  const pageKind = document.body.dataset.reactPage || "main";
+  const followListType = document.body.dataset.followListType || "followers";
+  const targetUserId = Number(document.body.dataset.targetUserId || "0");
   const [user, setUser] = useState(null);
   const [mutters, setMutters] = useState([]);
   const [followStateByUserId, setFollowStateByUserId] = useState({});
@@ -95,6 +99,9 @@ export default function App() {
         const sessionUser = await fetchSession();
         if (!active) return;
         setUser(sessionUser);
+        if (pageKind === "follow-list") {
+          return;
+        }
         const result = await fetchMutterPage({ limit: PAGE_LIMIT });
         if (!active) return;
         setMutters(result.mutters);
@@ -109,7 +116,7 @@ export default function App() {
     }
     initialize();
     return () => { active = false; };
-  }, []);
+  }, [pageKind]);
 
   /**
    * 旧画面の自動更新に相当する処理。
@@ -117,6 +124,8 @@ export default function App() {
    * 検索中・過去ページ読み込み後・編集中は、表示中の文脈を壊さないため自動更新しない。
    */
   useEffect(() => {
+    if (pageKind !== "main") return undefined;
+
     const timer = window.setInterval(() => {
       if (document.visibilityState === "visible"
           && !requestInFlight.current
@@ -127,7 +136,18 @@ export default function App() {
       }
     }, 5000);
     return () => window.clearInterval(timer);
-  }, [keyword, olderPagesLoaded, editing, loadPage]);
+  }, [pageKind, keyword, olderPagesLoaded, editing, loadPage]);
+
+  if (pageKind === "follow-list") {
+    return (
+      <FollowList
+        contextPath={contextPath}
+        sessionUser={user}
+        userId={targetUserId}
+        type={followListType}
+      />
+    );
+  }
 
   /** 投稿作成後は検索条件を解除し、最新一覧を再取得する。 */
   async function handlePost(text) {
