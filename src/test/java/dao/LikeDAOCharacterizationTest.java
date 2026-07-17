@@ -4,9 +4,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.annotation.DirtiesContext;
 
 import model.Mutter;
 import model.User;
@@ -16,20 +19,24 @@ import support.TestDatabaseSupport;
  * LikeDAOの現状の挙動を固定する特性テスト。
  * (モダナイゼーション計画 Phase0: 安全網構築)
  */
+@SpringBootTest(classes = com.example.dokotsubu.DokoTsubuApplication.class, properties = {
+        "spring.datasource.url=jdbc:h2:mem:dataJdbcCharacterization;DB_CLOSE_DELAY=-1",
+        "spring.datasource.username=sa",
+        "spring.datasource.password="
+})
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class LikeDAOCharacterizationTest {
 
     private final LikeDAO likeDAO = new LikeDAO();
     private final UserDAO userDAO = new UserDAO();
     private final MutterDAO mutterDAO = new MutterDAO();
 
-    @BeforeAll
-    static void setUpDatabase() {
-        TestDatabaseSupport.useFreshInMemoryDatabase("likedao_characterization");
-    }
+    @Autowired
+    private JdbcTemplate jdbc;
 
     @BeforeEach
     void resetTables() {
-        TestDatabaseSupport.clearAllTables();
+        TestDatabaseSupport.clearAllTables(jdbc);
     }
 
     private int createUser(String name) {

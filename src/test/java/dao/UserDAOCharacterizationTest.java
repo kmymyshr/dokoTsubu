@@ -5,9 +5,12 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.annotation.DirtiesContext;
 
 import model.User;
 import support.TestDatabaseSupport;
@@ -16,18 +19,22 @@ import support.TestDatabaseSupport;
  * UserDAOの現状の挙動を固定する特性テスト。
  * (モダナイゼーション計画 Phase0: 安全網構築)
  */
+@SpringBootTest(classes = com.example.dokotsubu.DokoTsubuApplication.class, properties = {
+        "spring.datasource.url=jdbc:h2:mem:dataJdbcCharacterization;DB_CLOSE_DELAY=-1",
+        "spring.datasource.username=sa",
+        "spring.datasource.password="
+})
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class UserDAOCharacterizationTest {
 
     private final UserDAO userDAO = new UserDAO();
 
-    @BeforeAll
-    static void setUpDatabase() {
-        TestDatabaseSupport.useFreshInMemoryDatabase("userdao_characterization");
-    }
+    @Autowired
+    private JdbcTemplate jdbc;
 
     @BeforeEach
     void resetTables() {
-        TestDatabaseSupport.clearAllTables();
+        TestDatabaseSupport.clearAllTables(jdbc);
     }
 
     @Test
