@@ -1,7 +1,10 @@
-//ユーザ登録結果画面を出力するビュー
-
 <%@ page language="java" contentType="text/html; charset=UTF-8"
     pageEncoding="UTF-8"%>
+<%--
+  旧JSPフォーム互換の登録完了画面。
+
+  Phase10で通常の登録完了表示はReactへ移したため、このJSPは旧POST導線の互換用として残す。
+--%>
 <!DOCTYPE html>
 <html>
 <head>
