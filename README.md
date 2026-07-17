@@ -234,3 +234,12 @@ PostgreSQL / H2
 本プロジェクトでは、従来型のJava Webアプリケーションをベースに、React、REST API、Docker、PostgreSQL、Spring Security、Flyway、Spring Data JDBC、Service層を組み合わせながら、段階的にモダンな構成へ移行しています。
 
 機能追加だけでなく、保守性、セキュリティ、データ整合性、CIで検証できる設計を重視しています。
+
+## Phase15 登録画面の旧JSP完了導線を整理
+
+Phase15では、ユーザー登録画面がReact + `/api/register` に移行済みであることを前提に、旧JSPフォーム互換として残っていた登録POST処理と完了JSPを整理しました。
+
+- `/Register` ServletはReactホストJSPを表示するGET専用の入口に縮小
+- 旧JSPフォームPOST用の登録処理を `/Register` から削除
+- 登録完了表示はReact側で行うため、`registerResult.jsp` を削除
+- 登録処理の正式な入口を `/api/register` に一本化
