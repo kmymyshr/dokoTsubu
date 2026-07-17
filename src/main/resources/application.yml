@@ -1,0 +1,23 @@
+spring:
+  application:
+    name: dokoTsubu
+  datasource:
+    url: ${db.url:${DB_URL:jdbc:h2:tcp://localhost/~/dokoTsubu}}
+    username: ${db.user:${DB_USER:sa}}
+    password: ${db.password:${DB_PASSWORD:}}
+    hikari:
+      pool-name: dokoTsubu-db
+      maximum-pool-size: ${db.maximumPoolSize:${DB_MAXIMUM_POOL_SIZE:10}}
+      minimum-idle: 0
+      connection-timeout: 10000
+      idle-timeout: 60000
+      max-lifetime: 1800000
+
+server:
+  port: ${PORT:8080}
+  servlet:
+    context-path: /dokoTsubu
+    session:
+      cookie:
+        http-only: true
+        same-site: lax
