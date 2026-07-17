@@ -43,7 +43,7 @@ async function request(path, options = {}) {
 export async function fetchSession() {
   const session = await request("/api/session");
   csrfToken = session.csrfToken;
-  return { id: session.id, name: session.name };
+  return { id: session.id, name: session.name, csrfToken: session.csrfToken };
 }
 
 export function fetchMutterPage({ keyword = "", cursor = null, limit = 20 }) {

@@ -12,6 +12,7 @@
 <h1>ユーザ登録</h1>
 
 <form action="Register" method="post">
+    <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}">
     ユーザー名：<input type="text" name="name" value="${param.name}"><br>
     パスワード：<input type="password" name="pass"><br>
     <input type="submit" value="登録">

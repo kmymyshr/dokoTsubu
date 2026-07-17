@@ -8,7 +8,9 @@
     <title>プロフィール</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/react/assets/main.css">
 </head>
-<body data-context-path="${pageContext.request.contextPath}">
+<body data-context-path="${pageContext.request.contextPath}"
+      data-csrf-token="${_csrf.token}"
+      data-csrf-header="${_csrf.headerName}">
     <main style="max-width: 720px; margin: 0 auto; padding: 24px;">
         <p><a href="${pageContext.request.contextPath}/Main">Mainへ戻る</a></p>
 
@@ -58,7 +60,7 @@
                     <h2>自己紹介を編集</h2>
                     <form action="${pageContext.request.contextPath}/Profile" method="post">
                         <input type="hidden" name="userId" value="${profileUser.id}">
-                        <input type="hidden" name="_csrf" value="${csrfToken}">
+                        <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}">
                         <textarea name="bio" rows="4" maxlength="160" style="width: 100%;"><c:out value="${not empty submittedBio ? submittedBio : profileUser.bio}" /></textarea>
                         <div style="margin-top: 12px;">
                             <button type="submit">保存</button>

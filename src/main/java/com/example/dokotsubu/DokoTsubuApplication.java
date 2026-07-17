@@ -7,7 +7,7 @@ import org.springframework.boot.web.servlet.ServletComponentScan;
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
 
 @SpringBootApplication
-@ServletComponentScan(basePackages = { "api", "security", "servlet", "util" })
+@ServletComponentScan(basePackages = { "api", "servlet", "util" })
 public class DokoTsubuApplication extends SpringBootServletInitializer {
 
     public static void main(String[] args) {

@@ -24,7 +24,7 @@ Java Servlet / JSP をベースに開発し、**React + REST API**
   分類        技術
   ----------- ---------------------------
   Language    Java 21
-  Backend     Spring Boot 3.5 / Jakarta Servlet 6 / JSP
+  Backend     Spring Boot 3.5 / Spring Security 6.5 / Jakarta Servlet 6 / JSP
   Frontend    React 19 / Vite
   Database    PostgreSQL / H2 / Flyway
   Build       Maven
@@ -156,8 +156,11 @@ APIを追加しながらReactへ段階的に移行しました。既存資産を
 
 ## セキュリティ
 
--   CSRF対策を実装
+-   Spring Securityでログイン・ログアウトとURL認可を一元管理
+-   Spring Securityのセッション方式でCSRF対策を実装
+-   APIでは未認証（401）とCSRFエラー（403）をJSONで返却
 -   パスワードをBCryptでハッシュ化
+-   認証成功時にセッションIDを変更
 -   更新時は楽観ロックを採用し、同時編集による競合を防止
 
 ## データベース設計
@@ -180,7 +183,6 @@ APIを追加しながらReactへ段階的に移行しました。既存資産を
 
 # 今後の改善予定
 
--   Spring Security導入
 -   Spring Data JDBCへの移行
 -   CI/CDの構築
 -   旧JSP画面のReact統合

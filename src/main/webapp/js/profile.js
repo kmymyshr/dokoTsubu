@@ -6,6 +6,8 @@
   const message = document.getElementById("followMessage");
   const followersCount = document.getElementById("followersCount");
   const contextPath = document.body.dataset.contextPath || "";
+  const csrfToken = document.body.dataset.csrfToken;
+  const csrfHeader = document.body.dataset.csrfHeader || "X-CSRF-Token";
   const followeeId = Number(root.dataset.userId);
   let followed = root.dataset.following === "true";
 
@@ -27,7 +29,8 @@
         credentials: "same-origin",
         headers: {
           Accept: "application/json",
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          [csrfHeader]: csrfToken
         },
         body: JSON.stringify({ followeeId })
       });

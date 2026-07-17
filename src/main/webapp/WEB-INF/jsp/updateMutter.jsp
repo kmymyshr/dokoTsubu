@@ -11,7 +11,7 @@
 	<form action="${pageContext.request.contextPath}/UpdateMutter" method="post">
 		<input type="hidden" name="mutterId" value="<c:out value='${mutter.id}' />">
 		<input type="hidden" name="version" value="<c:out value='${mutter.version}' />">
-		<input type="hidden" name="_csrf" value="<c:out value='${csrfToken}' />">
+		<input type="hidden" name="${_csrf.parameterName}" value="<c:out value='${_csrf.token}' />">
 		<input type="text" name="text" value="<c:out value='${mutter.text}' />" required>
 		<input type="submit" value="更新">
 	</form>

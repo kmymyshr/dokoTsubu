@@ -13,7 +13,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import model.User;
-import security.CsrfTokenManager;
+import org.springframework.security.web.csrf.CsrfToken;
 import util.ObjectMapperFactory;
 
 /**
@@ -46,6 +46,8 @@ public class SessionApiServlet extends HttpServlet {
         }
 
         // 3. ログイン済みなら、ユーザー情報と CSRF トークンを返す。
-        OBJECT_MAPPER.writeValue(response.getWriter(), SessionUserResponse.from(loginUser, CsrfTokenManager.getOrCreate(session)));
+        CsrfToken csrfToken = (CsrfToken) request.getAttribute(CsrfToken.class.getName());
+        OBJECT_MAPPER.writeValue(response.getWriter(),
+                SessionUserResponse.from(loginUser, csrfToken.getToken()));
     }
 }
