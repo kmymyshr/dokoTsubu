@@ -148,7 +148,7 @@ Phase12では、ログイン画面をReactホストへ移しました。
 - `index.jsp` はReactホストへ変更し、CSRFトークンとログイン結果フラグをReactへ渡す
 - 認証処理はSpring Securityの `/Login` フォーム認証を維持
 - ログイン成功時は `Main` へredirectし、失敗/ログアウト後はReactログイン画面へ戻す
-- `loginResult.jsp` / `logout.jsp` は互換用として残存
+- `loginResult.jsp` / `logout.jsp` はこの時点では互換用として残し、後続Phaseで削除対象にする
 
 Phase13では、React移行後に参照されなくなった旧静的フロント資産を削除しました。
 
@@ -251,3 +251,12 @@ Phase16では、ログインがSpring Security、登録がReact + `/api/register
 - `LoginLogic` を削除し、認証判定の責務を `UserService.authenticate` に集約
 - `RegisterUserLogic` を削除し、登録処理の責務を `UserService.register` と `/api/register` に集約
 - `UserService` のコメントを現在の責務に合わせて更新
+
+## Phase17 未使用JSP互換ファイルを整理
+
+Phase17では、ログイン画面がReactホスト化され、ログイン成功/失敗/ログアウト後の遷移もSpring Security + Reactログイン画面に一本化済みであることを前提に、参照されなくなったJSPを削除しました。
+
+- `loginResult.jsp` を削除
+- `logout.jsp` を削除
+- どこからもincludeされていなかった `footer.jsp` を削除
+- 残るJSPはReactホストとして使う画面に絞り込み
