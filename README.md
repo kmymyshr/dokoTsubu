@@ -26,7 +26,7 @@ Java Servlet / JSP をベースに開発し、**React + REST API**
   Language    Java 21
   Backend     Spring Boot 3.5 / Jakarta Servlet 6 / JSP
   Frontend    React 19 / Vite
-  Database    PostgreSQL / H2
+  Database    PostgreSQL / H2 / Flyway
   Build       Maven
   Container   Docker / Embedded Tomcat 10.1
   Deploy      Render
@@ -68,6 +68,7 @@ DB_URL=jdbc:postgresql://localhost:5432/dokotsubu
 DB_USER=dokotsubu
 DB_PASSWORD=change-me
 DB_MAXIMUM_POOL_SIZE=10
+FLYWAY_BASELINE_ON_MIGRATE=false
 PORT=8080
 ```
 
@@ -81,6 +82,32 @@ docker run --rm -p 8080:8080 \
   -e DB_PASSWORD=change-me \
   dokotsubu
 ```
+
+------------------------------------------------------------------------
+
+# データベースマイグレーション
+
+アプリケーション起動時にFlywayが
+`src/main/resources/db/migration`のマイグレーションを検証・適用します。
+新規データベースでは、`V1__initial_schema.sql`からスキーマを作成します。
+適用履歴は`flyway_schema_history`テーブルで管理されます。
+
+既存のPostgreSQLを初めてFlyway管理へ移す場合は、次の手順で一度だけ
+ベースライン化します。
+
+1. データベースをバックアップする
+2. `db/migration/postgresql_baseline_preflight.sql`を実行する
+3. 不整合件数がすべて0で、テーブル・列・制約がV1と一致することを確認する
+4. 初回起動時だけ`FLYWAY_BASELINE_ON_MIGRATE=true`を設定する
+5. `flyway_schema_history`にバージョン1のBaselineが記録されたことを確認する
+6. 以降は`FLYWAY_BASELINE_ON_MIGRATE=false`へ戻す
+
+`baseline-on-migrate`は、接続先を誤った場合の安全確認を弱めるため、
+既定値では無効です。また、ベースライン化は既存スキーマとV1の構造を
+自動比較しないため、事前確認を省略しないでください。
+
+既存のマイグレーションファイルは変更せず、今後のスキーマ変更は
+`V2__...sql`、`V3__...sql`のように新しいファイルとして追加します。
 
 ------------------------------------------------------------------------
 
@@ -154,7 +181,6 @@ APIを追加しながらReactへ段階的に移行しました。既存資産を
 # 今後の改善予定
 
 -   Spring Security導入
--   Flywayによるマイグレーション管理
 -   Spring Data JDBCへの移行
 -   CI/CDの構築
 -   旧JSP画面のReact統合
