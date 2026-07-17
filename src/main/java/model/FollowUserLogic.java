@@ -2,36 +2,41 @@ package model;
 
 import java.util.List;
 
-import dao.FollowDAO;
+import com.example.dokotsubu.service.ApplicationServiceBridge;
+import com.example.dokotsubu.service.SocialService;
 
 public class FollowUserLogic {
-    /**
-     * フォロー/アンフォローの処理をまとめて担当するクラスです。
-     * サーブレット側ではこのクラスを呼ぶだけで処理を分かりやすくできます。
-     */
+    private final SocialService social;
+
+    public FollowUserLogic() {
+        this(ApplicationServiceBridge.social());
+    }
+
+    public FollowUserLogic(SocialService social) {
+        this.social = social;
+    }
+
     public boolean execute(int followerId, int followeeId) {
-        FollowDAO dao = new FollowDAO();
-        dao.toggleFollow(followerId, followeeId);
-        return dao.isFollowing(followerId, followeeId);
+        return social.toggleFollow(followerId, followeeId);
     }
 
     public boolean isFollowing(int followerId, int followeeId) {
-        return new FollowDAO().isFollowing(followerId, followeeId);
+        return social.isFollowing(followerId, followeeId);
     }
 
     public int countFollowers(int userId) {
-        return new FollowDAO().countFollowers(userId);
+        return social.countFollowers(userId);
     }
 
     public int countFollowing(int userId) {
-        return new FollowDAO().countFollowing(userId);
+        return social.countFollowing(userId);
     }
 
     public List<User> findFollowingUsers(int userId) {
-        return new FollowDAO().findFollowingUsers(userId);
+        return social.findFollowingUsers(userId);
     }
 
     public List<User> findFollowerUsers(int userId) {
-        return new FollowDAO().findFollowerUsers(userId);
+        return social.findFollowerUsers(userId);
     }
 }

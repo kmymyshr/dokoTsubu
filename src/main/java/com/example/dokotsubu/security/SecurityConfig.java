@@ -2,8 +2,8 @@ package com.example.dokotsubu.security;
 
 import java.io.IOException;
 
+import com.example.dokotsubu.service.UserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import dao.UserDAO;
 import dto.ApiErrorResponse;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletRequest;
@@ -34,7 +34,7 @@ public class SecurityConfig {
     private static final ObjectMapper OBJECT_MAPPER = ObjectMapperFactory.getObjectMapper();
 
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    SecurityFilterChain securityFilterChain(HttpSecurity http, UserService users) throws Exception {
         HttpSessionCsrfTokenRepository csrfRepository = new HttpSessionCsrfTokenRepository();
         csrfRepository.setHeaderName("X-CSRF-Token");
         csrfRepository.setParameterName("_csrf");
@@ -53,7 +53,7 @@ public class SecurityConfig {
                         .loginProcessingUrl("/Login")
                         .usernameParameter("name")
                         .passwordParameter("pass")
-                        .successHandler(loginSuccessHandler())
+                        .successHandler(loginSuccessHandler(users))
                         .failureHandler(loginFailureHandler())
                         .permitAll())
                 .logout(logout -> logout
@@ -72,9 +72,9 @@ public class SecurityConfig {
     }
 
     @Bean
-    UserDetailsService userDetailsService() {
+    UserDetailsService userDetailsService(UserService users) {
         return username -> {
-            User user = new UserDAO().findByName(username);
+            User user = users.findByName(username);
             if (user == null) {
                 throw new UsernameNotFoundException("ユーザーが見つかりません");
             }
@@ -91,9 +91,9 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-    private AuthenticationSuccessHandler loginSuccessHandler() {
+    private AuthenticationSuccessHandler loginSuccessHandler(UserService users) {
         return (request, response, authentication) -> {
-            User loginUser = new UserDAO().findByName(authentication.getName());
+            User loginUser = users.findByName(authentication.getName());
             request.getSession().setAttribute("loginUser", loginUser);
             request.getRequestDispatcher("/WEB-INF/jsp/loginResult.jsp").forward(request, response);
         };

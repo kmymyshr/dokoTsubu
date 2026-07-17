@@ -1,12 +1,20 @@
 package model;
 
-import dao.MutterDAO;
+import com.example.dokotsubu.service.ApplicationServiceBridge;
+import com.example.dokotsubu.service.MutterService;
 
 public class DeleteMutterLogic {
-	/**
-	 * 指定されたつぶやきを、ログイン中ユーザーのものとして削除する。
-	 */
-	public boolean execute(int mutterId, int userId) {
-		return new MutterDAO().delete(mutterId, userId);
-	}
+    private final MutterService mutters;
+
+    public DeleteMutterLogic() {
+        this(ApplicationServiceBridge.mutters());
+    }
+
+    public DeleteMutterLogic(MutterService mutters) {
+        this.mutters = mutters;
+    }
+
+    public boolean execute(int mutterId, int userId) {
+        return mutters.delete(mutterId, userId);
+    }
 }

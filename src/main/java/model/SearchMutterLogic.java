@@ -1,17 +1,22 @@
 package model;
+
 import java.util.List;
 
-import dao.MutterDAO;
+import com.example.dokotsubu.service.ApplicationServiceBridge;
+import com.example.dokotsubu.service.MutterService;
 
 public class SearchMutterLogic {
+    private final MutterService mutters;
 
-	//MutterDAOのsearchメソッドを呼び出し、検索結果を返す
-	public List<Mutter> execute(String keyword) {
-		MutterDAO dao = new MutterDAO();
-		return dao.search(keyword);
-	}
-	
-	
-	
-	
+    public SearchMutterLogic() {
+        this(ApplicationServiceBridge.mutters());
+    }
+
+    public SearchMutterLogic(MutterService mutters) {
+        this.mutters = mutters;
+    }
+
+    public List<Mutter> execute(String keyword) {
+        return mutters.search(keyword);
+    }
 }

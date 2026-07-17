@@ -3,7 +3,7 @@ package servlet;
 import java.io.IOException;
 import java.util.stream.Collectors;
 
-import dao.UserDAO;
+import com.example.dokotsubu.service.ApplicationServiceBridge;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -34,7 +34,7 @@ public class FollowerList extends HttpServlet {
             return;
         }
 
-        User targetUser = new UserDAO().findById(userId);
+        User targetUser = ApplicationServiceBridge.users().findById(userId);
         if (targetUser == null) {
             response.sendError(HttpServletResponse.SC_NOT_FOUND, "指定されたユーザーは存在しません");
             return;

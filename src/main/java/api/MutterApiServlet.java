@@ -5,7 +5,9 @@ import java.io.IOException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import dao.MutterDAO;
+import com.example.dokotsubu.service.ApplicationServiceBridge;
+import com.example.dokotsubu.service.MutterService;
+import com.example.dokotsubu.service.SocialService;
 import dto.ApiErrorResponse;
 import dto.MutterListResponse;
 import dto.MutterResponse;
@@ -23,7 +25,6 @@ import model.User;
 import util.ObjectMapperFactory;
 import validation.MutterInputValidator;
 import validation.ValidationResult;
-import dao.LikeDAO;
 
 /**
  * つぶやきを扱う REST API です。
@@ -56,15 +57,17 @@ public class MutterApiServlet extends HttpServlet {
         }
         if (id != null) {
             // 3. 個別のつぶやきを取得して JSON で返す。
-            Mutter mutter = new MutterDAO().findById(id);
+            MutterService mutters = ApplicationServiceBridge.mutters();
+            SocialService social = ApplicationServiceBridge.social();
+            Mutter mutter = mutters.findById(id);
             if (mutter == null) {
                 writeError(response, HttpServletResponse.SC_NOT_FOUND,
                         "MUTTER_NOT_FOUND", "指定されたつぶやきは存在しません");
                 return;
             }
-            int likeCount = new LikeDAO().countLikes(id);
-            boolean likedByMe = new LikeDAO().hasLiked(id, loginUser.getId());
-            boolean followedByMe = new dao.FollowDAO().isFollowing(loginUser.getId(), mutter.getUserId());
+            int likeCount = social.countLikes(id);
+            boolean likedByMe = social.hasLiked(id, loginUser.getId());
+            boolean followedByMe = social.isFollowing(loginUser.getId(), mutter.getUserId());
             writeJson(response, HttpServletResponse.SC_OK, MutterResponse.from(mutter, likeCount, likedByMe, followedByMe));
             return;
         }
@@ -122,7 +125,7 @@ public class MutterApiServlet extends HttpServlet {
         if (!textResult.valid()) return;
 
         // 3. データベースに保存し、作成結果を返す。
-        Mutter created = new MutterDAO().createAndReturn(
+        Mutter created = ApplicationServiceBridge.mutters().createAndReturn(
                 new Mutter(loginUser.getId(), textResult.value()));
         if (created == null) {
             writeError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
@@ -163,7 +166,9 @@ public class MutterApiServlet extends HttpServlet {
         }
 
         // 3. 対象つぶやきが存在し、自分のものか確認する。
-        Mutter current = new MutterDAO().findById(id);
+        MutterService mutters = ApplicationServiceBridge.mutters();
+        SocialService social = ApplicationServiceBridge.social();
+        Mutter current = mutters.findById(id);
         if (current == null) {
             writeError(response, HttpServletResponse.SC_NOT_FOUND,
                     "MUTTER_NOT_FOUND", "指定されたつぶやきは存在しません");
@@ -178,15 +183,15 @@ public class MutterApiServlet extends HttpServlet {
         // 4. 更新を実行して結果を返す。
         Mutter updated = new Mutter(id, loginUser.getId(), loginUser.getName(),
                 textResult.value(), body.version());
-        if (!new MutterDAO().update(updated)) {
+        if (!mutters.update(updated)) {
             writeError(response, HttpServletResponse.SC_CONFLICT,
                     "UPDATE_CONFLICT", "他の操作で更新されています。最新データを取得してください");
             return;
         }
-        Mutter refreshed = new MutterDAO().findById(id);
-        int likeCount = new LikeDAO().countLikes(id);
-        boolean likedByMe = new LikeDAO().hasLiked(id, loginUser.getId());
-        boolean followedByMe = new dao.FollowDAO().isFollowing(loginUser.getId(), refreshed.getUserId());
+        Mutter refreshed = mutters.findById(id);
+        int likeCount = social.countLikes(id);
+        boolean likedByMe = social.hasLiked(id, loginUser.getId());
+        boolean followedByMe = social.isFollowing(loginUser.getId(), refreshed.getUserId());
         writeJson(response, HttpServletResponse.SC_OK,
             MutterResponse.from(refreshed, likeCount, likedByMe, followedByMe));
     }
@@ -208,7 +213,8 @@ public class MutterApiServlet extends HttpServlet {
         }
 
         // 2. 対象つぶやきが存在し、自分のものか確認する。
-        Mutter current = new MutterDAO().findById(id);
+        MutterService mutters = ApplicationServiceBridge.mutters();
+        Mutter current = mutters.findById(id);
         if (current == null) {
             writeError(response, HttpServletResponse.SC_NOT_FOUND,
                     "MUTTER_NOT_FOUND", "指定されたつぶやきは存在しません");
@@ -221,7 +227,7 @@ public class MutterApiServlet extends HttpServlet {
         }
 
         // 3. 削除を実行する。
-        if (!new MutterDAO().delete(id, loginUser.getId())) {
+        if (!mutters.delete(id, loginUser.getId())) {
             writeError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
                     "DELETE_FAILED", "つぶやきの削除に失敗しました");
             return;

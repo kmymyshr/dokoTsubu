@@ -4,7 +4,7 @@ import jakarta.annotation.PreDestroy;
 import org.springframework.stereotype.Component;
 
 /**
- * Spring管理外の既存Servlet/Logicから、Spring Data JDBCのBeanへ接続する移行用ブリッジ。
+ * Spring管理外に残る互換DAOから、Spring Data JDBCのBeanへ接続する移行用ブリッジ。
  */
 @Component
 public class DataAccessBridge {

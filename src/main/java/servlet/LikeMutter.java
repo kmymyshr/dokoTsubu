@@ -11,7 +11,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import dao.MutterDAO;
+import com.example.dokotsubu.service.ApplicationServiceBridge;
 import model.LikeMutterLogic;
 import model.Mutter;
 import model.User;
@@ -54,7 +54,7 @@ public class LikeMutter extends HttpServlet {
 
         // 自分の投稿にはいいねできないようにする。
         // ここで投稿者を確認してから、全体の処理へ進める。
-        Mutter target = new MutterDAO().findById(mutterId);
+        Mutter target = ApplicationServiceBridge.mutters().findById(mutterId);
         if (target == null) {
             response.sendError(HttpServletResponse.SC_NOT_FOUND, "指定されたつぶやきは存在しません");
             return;

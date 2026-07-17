@@ -1,23 +1,20 @@
-//ユーザ情報をデータベースに登録する。そういう処理で使う。
-//Bcrypt予定
-
 package model;
 
-//bcrypt
-
-import org.mindrot.jbcrypt.BCrypt;
-
-import dao.UserDAO;
+import com.example.dokotsubu.service.ApplicationServiceBridge;
+import com.example.dokotsubu.service.UserService;
 
 public class RegisterUserLogic {
+    private final UserService users;
 
-	public boolean execute(User user) {
+    public RegisterUserLogic() {
+        this(ApplicationServiceBridge.users());
+    }
 
-		String hashedPass = BCrypt.hashpw(user.getPass(), BCrypt.gensalt(12));
+    public RegisterUserLogic(UserService users) {
+        this.users = users;
+    }
 
-		User hashedUser = new User(user.getName(), hashedPass);
-
-		UserDAO dao = new UserDAO();
-		return dao.create(hashedUser);
-	}
+    public boolean execute(User user) {
+        return users.register(user);
+    }
 }

@@ -2,7 +2,8 @@ package servlet;
 
 import java.io.IOException;
 
-import dao.UserDAO;
+import com.example.dokotsubu.service.ApplicationServiceBridge;
+import com.example.dokotsubu.service.UserService;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -34,7 +35,8 @@ public class Profile extends HttpServlet {
             return;
         }
 
-        User profileUser = new UserDAO().findById(userId);
+        UserService users = ApplicationServiceBridge.users();
+        User profileUser = users.findById(userId);
         if (profileUser == null) {
             response.sendError(HttpServletResponse.SC_NOT_FOUND, "指定されたユーザーは存在しません");
             return;
@@ -63,9 +65,10 @@ public class Profile extends HttpServlet {
             return;
         }
 
+        UserService users = ApplicationServiceBridge.users();
         String bio = normalizeBio(request.getParameter("bio"));
         if (bio.length() > MAX_BIO_LENGTH) {
-            User profileUser = new UserDAO().findById(userId);
+            User profileUser = users.findById(userId);
             request.setAttribute("errorMsg", "自己紹介は160文字以内で入力してください");
             request.setAttribute("submittedBio", bio);
             prepareProfileAttributes(request, loginUser, profileUser);
@@ -74,9 +77,8 @@ public class Profile extends HttpServlet {
             return;
         }
 
-        UserDAO userDAO = new UserDAO();
-        if (!userDAO.updateBio(userId, bio)) {
-            User profileUser = userDAO.findById(userId);
+        if (!users.updateBio(userId, bio)) {
+            User profileUser = users.findById(userId);
             request.setAttribute("errorMsg", "自己紹介の更新に失敗しました");
             request.setAttribute("submittedBio", bio);
             prepareProfileAttributes(request, loginUser, profileUser);
@@ -85,7 +87,7 @@ public class Profile extends HttpServlet {
             return;
         }
 
-        User refreshedUser = userDAO.findById(userId);
+        User refreshedUser = users.findById(userId);
         session.setAttribute("loginUser", refreshedUser);
         response.sendRedirect(request.getContextPath() + "/Profile?userId=" + userId + "&updated=1");
     }

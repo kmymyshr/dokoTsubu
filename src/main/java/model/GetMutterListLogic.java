@@ -1,65 +1,36 @@
 package model;
+
 import java.util.List;
 
-import dao.MutterDAO;
+import com.example.dokotsubu.service.ApplicationServiceBridge;
+import com.example.dokotsubu.service.MutterService;
 
 public class GetMutterListLogic {
-	public static final int DEFAULT_LIMIT = 20;
+    public static final int DEFAULT_LIMIT = MutterService.DEFAULT_LIMIT;
 
-	/**
-	 * つぶやき一覧を取得する。
-	 * 既定件数で返す。
-	 */
-	public List<Mutter> execute() {
-		return execute(null, DEFAULT_LIMIT).getMutters();
-	}
+    private final MutterService mutters;
 
-	/**
-	 * REST API 向けに、検索条件とカーソルを使ってつぶやき一覧を取得する。
-	 */
-	public MutterPage execute(String keyword, Integer cursor, int limit) {
-		List<Mutter> fetched = new MutterDAO().findPage(keyword, cursor, limit + 1);
-		boolean hasNext = fetched.size() > limit;
-		List<Mutter> mutters = new java.util.ArrayList<>(
-				fetched.subList(0, Math.min(limit, fetched.size())));
-		Integer nextCursor = hasNext && !mutters.isEmpty()
-				? mutters.get(mutters.size() - 1).getId() : null;
-		return new MutterPage(mutters, nextCursor, hasNext);
-	}
+    public GetMutterListLogic() {
+        this(ApplicationServiceBridge.mutters());
+    }
 
-	/** Returns an enriched page without issuing per-mutter queries. */
-	public MutterFeedPage executeFeed(String keyword, Integer cursor, int limit, int viewerId) {
-		List<MutterFeedItem> fetched = new MutterDAO()
-				.findFeedPage(keyword, cursor, limit + 1, viewerId);
-		boolean hasNext = fetched.size() > limit;
-		List<MutterFeedItem> items = new java.util.ArrayList<>(
-				fetched.subList(0, Math.min(limit, fetched.size())));
-		Integer nextCursor = hasNext && !items.isEmpty()
-				? items.get(items.size() - 1).mutter().getId() : null;
-		return new MutterFeedPage(items, nextCursor, hasNext);
-	}
+    public GetMutterListLogic(MutterService mutters) {
+        this.mutters = mutters;
+    }
 
-	/**
-	 * 通常の一覧表示向けに、カーソル付きでつぶやき一覧を取得する。
-	 */
-	public MutterPage execute(Integer cursor, int limit) {
-		MutterDAO dao = new MutterDAO();
+    public List<Mutter> execute() {
+        return mutters.findAll();
+    }
 
-		// 1件多く取得し、次ページが存在するかを判定する。
-		List<Mutter> fetched = cursor == null
-				? dao.findLatest(limit + 1)
-				: dao.findByCursor(cursor, limit + 1);
-		if (fetched == null) {
-			fetched = new java.util.ArrayList<>();
-		}
+    public MutterPage execute(String keyword, Integer cursor, int limit) {
+        return mutters.findPage(keyword, cursor, limit);
+    }
 
-		boolean hasNext = fetched.size() > limit;
-		List<Mutter> mutters = new java.util.ArrayList<>(
-				fetched.subList(0, Math.min(limit, fetched.size())));
-		Integer nextCursor = hasNext && !mutters.isEmpty()
-				? mutters.get(mutters.size() - 1).getId()
-				: null;
+    public MutterFeedPage executeFeed(String keyword, Integer cursor, int limit, int viewerId) {
+        return mutters.findFeedPage(keyword, cursor, limit, viewerId);
+    }
 
-		return new MutterPage(mutters, nextCursor, hasNext);
-	}
+    public MutterPage execute(Integer cursor, int limit) {
+        return mutters.findTimelinePage(cursor, limit);
+    }
 }

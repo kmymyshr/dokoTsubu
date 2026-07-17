@@ -1,13 +1,20 @@
 package model;
 
-import dao.MutterDAO;
+import com.example.dokotsubu.service.ApplicationServiceBridge;
+import com.example.dokotsubu.service.MutterService;
 
-/**
- * ID を指定して、1 件のつぶやきを取得する。
- * 編集画面などで利用する。
- */
 public class GetMutterLogic {
-	public Mutter execute(int mutterId) {
-		return new MutterDAO().findById(mutterId);
-	}
+    private final MutterService mutters;
+
+    public GetMutterLogic() {
+        this(ApplicationServiceBridge.mutters());
+    }
+
+    public GetMutterLogic(MutterService mutters) {
+        this.mutters = mutters;
+    }
+
+    public Mutter execute(int mutterId) {
+        return mutters.findById(mutterId);
+    }
 }
