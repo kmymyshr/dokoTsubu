@@ -3,6 +3,8 @@
   if (buttons.length === 0) return;
 
   const contextPath = document.body.dataset.contextPath || "";
+  const csrfToken = document.body.dataset.csrfToken;
+  const csrfHeader = document.body.dataset.csrfHeader || "X-CSRF-Token";
   const listCount = document.getElementById("listCount");
   const emptyState = document.getElementById("emptyState");
   const followList = document.getElementById("followList");
@@ -38,7 +40,8 @@
         credentials: "same-origin",
         headers: {
           Accept: "application/json",
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          [csrfHeader]: csrfToken
         },
         body: JSON.stringify({ followeeId })
       });

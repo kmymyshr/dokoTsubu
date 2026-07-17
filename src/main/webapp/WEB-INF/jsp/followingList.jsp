@@ -8,7 +8,9 @@
     <title>フォロー中一覧</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/react/assets/main.css">
 </head>
-<body data-context-path="${pageContext.request.contextPath}">
+<body data-context-path="${pageContext.request.contextPath}"
+      data-csrf-token="${_csrf.token}"
+      data-csrf-header="${_csrf.headerName}">
     <main style="max-width: 720px; margin: 0 auto; padding: 24px;">
         <p><a href="${pageContext.request.contextPath}/Profile?userId=${targetUser.id}">プロフィールへ戻る</a></p>
 

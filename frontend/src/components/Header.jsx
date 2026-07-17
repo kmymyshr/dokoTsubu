@@ -7,7 +7,12 @@ export default function Header({ user, contextPath }) {
       </div>
       <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
         {user && <a href={`${contextPath}/Profile?userId=${user.id}`}>マイページ</a>}
-        <a href={`${contextPath}/Logout`}>ログアウト</a>
+        {user && (
+          <form action={`${contextPath}/Logout`} method="post">
+            <input type="hidden" name="_csrf" value={user.csrfToken} />
+            <button type="submit">ログアウト</button>
+          </form>
+        )}
       </div>
     </header>
   );

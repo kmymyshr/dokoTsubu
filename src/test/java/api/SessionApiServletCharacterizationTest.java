@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import model.User;
+import org.springframework.security.web.csrf.DefaultCsrfToken;
 import util.ObjectMapperFactory;
 
 /**
@@ -43,6 +44,9 @@ class SessionApiServletCharacterizationTest {
     void doGet_returnsUserAndCsrfToken_whenLoggedIn() throws Exception {
         User loginUser = new User(1, "alice", "hashed-pass");
         HttpServletRequest request = mockRequest(loginUser);
+        org.mockito.Mockito.when(request.getAttribute(
+                org.springframework.security.web.csrf.CsrfToken.class.getName()))
+                .thenReturn(new DefaultCsrfToken("X-CSRF-Token", "_csrf", "test-token"));
         HttpServletResponse response = mock(HttpServletResponse.class);
         StringWriter body = captureResponseBody(response);
 

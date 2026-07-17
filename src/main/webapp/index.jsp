@@ -11,6 +11,7 @@
 
 
 <form action="Login" method="post">
+   <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}">
    ユーザー名：<input type="text" name="name"><br>
    パスワード：<input type="password" name="pass"><br>
    <input type="submit" value="ログイン">

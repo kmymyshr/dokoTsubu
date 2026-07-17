@@ -12,7 +12,6 @@ import model.GetMutterLogic;
 import model.Mutter;
 import model.UpdateMutterLogic;
 import model.User;
-import security.CsrfTokenManager;
 import validation.MutterInputValidator;
 import validation.ValidationResult;
 
@@ -51,7 +50,6 @@ public class UpdateMutter extends HttpServlet {
 
 		// 4. 編集画面で使う情報をリクエストにセットする。
 		request.setAttribute("mutter", targetMutter);
-		request.setAttribute("csrfToken", CsrfTokenManager.getOrCreate(session));
 		RequestDispatcher dispatcher = request.getRequestDispatcher("/WEB-INF/jsp/updateMutter.jsp");
 		dispatcher.forward(request, response);
 	}

@@ -12,7 +12,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import model.FollowUserLogic;
 import model.User;
-import security.CsrfTokenManager;
 
 @WebServlet("/Profile")
 public class Profile extends HttpServlet {
@@ -41,7 +40,7 @@ public class Profile extends HttpServlet {
             return;
         }
 
-        prepareProfileAttributes(request, session, loginUser, profileUser);
+        prepareProfileAttributes(request, loginUser, profileUser);
         RequestDispatcher dispatcher = request.getRequestDispatcher("/WEB-INF/jsp/profile.jsp");
         dispatcher.forward(request, response);
     }
@@ -69,7 +68,7 @@ public class Profile extends HttpServlet {
             User profileUser = new UserDAO().findById(userId);
             request.setAttribute("errorMsg", "自己紹介は160文字以内で入力してください");
             request.setAttribute("submittedBio", bio);
-            prepareProfileAttributes(request, session, loginUser, profileUser);
+            prepareProfileAttributes(request, loginUser, profileUser);
             RequestDispatcher dispatcher = request.getRequestDispatcher("/WEB-INF/jsp/profile.jsp");
             dispatcher.forward(request, response);
             return;
@@ -80,7 +79,7 @@ public class Profile extends HttpServlet {
             User profileUser = userDAO.findById(userId);
             request.setAttribute("errorMsg", "自己紹介の更新に失敗しました");
             request.setAttribute("submittedBio", bio);
-            prepareProfileAttributes(request, session, loginUser, profileUser);
+            prepareProfileAttributes(request, loginUser, profileUser);
             RequestDispatcher dispatcher = request.getRequestDispatcher("/WEB-INF/jsp/profile.jsp");
             dispatcher.forward(request, response);
             return;
@@ -91,7 +90,7 @@ public class Profile extends HttpServlet {
         response.sendRedirect(request.getContextPath() + "/Profile?userId=" + userId + "&updated=1");
     }
 
-    private void prepareProfileAttributes(HttpServletRequest request, HttpSession session, User loginUser, User profileUser) {
+    private void prepareProfileAttributes(HttpServletRequest request, User loginUser, User profileUser) {
         boolean ownProfile = loginUser.getId() == profileUser.getId();
         FollowUserLogic logic = new FollowUserLogic();
 
@@ -100,7 +99,6 @@ public class Profile extends HttpServlet {
         request.setAttribute("following", ownProfile ? false : logic.isFollowing(loginUser.getId(), profileUser.getId()));
         request.setAttribute("followers", logic.countFollowers(profileUser.getId()));
         request.setAttribute("followingCount", logic.countFollowing(profileUser.getId()));
-        request.setAttribute("csrfToken", CsrfTokenManager.getOrCreate(session));
     }
 
     private Integer parsePositiveInteger(String value) {
