@@ -142,7 +142,15 @@ Phase11では、プロフィール画面をReact + REST APIへ移しました。
 - `Profile` ServletはReactホスト表示に責務を縮小し、旧POST処理は互換用として保持
 - `profile.jsp` はReactホストへ変更し、対象ユーザーIDとCSRFトークンをReactへ渡す
 
-JSPはまだログインなどに残っていますが、投稿タイムライン、フォロー一覧、ユーザー登録、プロフィールはReact + REST API中心の構成へ移行しています。
+Phase12では、ログイン画面をReactホストへ移しました。
+
+- `LoginPage` Reactコンポーネントを追加し、ログインフォーム、失敗メッセージ、ログアウト後メッセージを表示
+- `index.jsp` はReactホストへ変更し、CSRFトークンとログイン結果フラグをReactへ渡す
+- 認証処理はSpring Securityの `/Login` フォーム認証を維持
+- ログイン成功時は `Main` へredirectし、失敗/ログアウト後はReactログイン画面へ戻す
+- `loginResult.jsp` / `logout.jsp` は互換用として残存
+
+JSPは一部の互換画面や編集画面に残っていますが、投稿タイムライン、フォロー一覧、ユーザー登録、プロフィール、ログインはReact中心の構成へ移行しています。
 
 ## 主な機能
 
@@ -203,7 +211,7 @@ PostgreSQL / H2
 
 ## 今後の改善予定
 
-- ログインなど残りJSPのReact統合
+- 残りJSP互換画面の整理
 - CI/CDの継続改善
 - 移行用の互換DAO / Logicブリッジを段階的に縮小
 - Service層とReactコンポーネントのテスト拡充

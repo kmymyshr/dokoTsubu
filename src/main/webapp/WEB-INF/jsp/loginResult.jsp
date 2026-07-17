@@ -1,6 +1,12 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8"
     pageEncoding="UTF-8"%>
     <%@ page import="model.User" %>
+<%--
+  旧ログイン結果画面。
+
+  Phase12で通常のログイン成功/失敗導線はReactログイン画面とMainへのredirectに移したため、
+  このJSPは段階移行中の互換用として残す。
+--%>
     
 <%
 // セッションスコープからユーザー情報を取得

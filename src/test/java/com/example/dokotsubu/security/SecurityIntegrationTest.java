@@ -8,7 +8,6 @@ import static org.springframework.security.test.web.servlet.response.SecurityMoc
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.forwardedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -80,24 +79,24 @@ class SecurityIntegrationTest {
     }
 
     @Test
-    void loginFailureKeepsLegacyResultPage() throws Exception {
+    void loginFailureRedirectsToReactLoginPageWithErrorFlag() throws Exception {
         mockMvc.perform(post("/Login")
                         .with(csrf())
                         .param("name", "unknown")
                         .param("pass", "wrong"))
-                .andExpect(status().isOk())
-                .andExpect(forwardedUrl("/WEB-INF/jsp/loginResult.jsp"));
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/index.jsp?error=1"));
     }
 
     @Test
-    void loginAndLogoutUseSpringSecurityWhileKeepingLegacySession() throws Exception {
+    void loginAndLogoutUseSpringSecurityWhileReturningToReactPages() throws Exception {
         MvcResult login = mockMvc.perform(post("/Login")
                         .with(csrf())
                         .param("name", "alice")
                         .param("pass", "password"))
-                .andExpect(status().isOk())
+                .andExpect(status().is3xxRedirection())
                 .andExpect(authenticated().withUsername("alice"))
-                .andExpect(forwardedUrl("/WEB-INF/jsp/loginResult.jsp"))
+                .andExpect(redirectedUrl("/Main"))
                 .andReturn();
 
         org.assertj.core.api.Assertions.assertThat(
@@ -108,8 +107,8 @@ class SecurityIntegrationTest {
                         .session((org.springframework.mock.web.MockHttpSession)
                                 login.getRequest().getSession(false))
                         .with(csrf()))
-                .andExpect(status().isOk())
+                .andExpect(status().is3xxRedirection())
                 .andExpect(unauthenticated())
-                .andExpect(forwardedUrl("/WEB-INF/jsp/logout.jsp"));
+                .andExpect(redirectedUrl("/index.jsp?logout=1"));
     }
 }
