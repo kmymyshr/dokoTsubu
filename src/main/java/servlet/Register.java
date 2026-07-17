@@ -12,23 +12,29 @@ import jakarta.servlet.http.HttpServletResponse;
 import model.RegisterUserLogic;
 import model.User;
 
+/**
+ * ユーザー登録画面の入口Servlet。
+ *
+ * <p>Phase10で登録画面をReact化したため、GETはReactホストJSPを表示するだけに縮小する。
+ * POSTは旧JSPフォーム互換として残すが、通常の登録処理はReactから `/api/register` を呼ぶ。</p>
+ */
 @WebServlet("/Register")
 public class Register extends HttpServlet {
     private static final long serialVersionUID = 1L;
 
-    /**
-     * ユーザー登録画面を表示する。
-     */
+    /** React登録画面を読み込むJSPホストへforwardする。 */
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        // 1. 登録画面の JSP を表示する。
         RequestDispatcher dispatcher =
                 request.getRequestDispatcher("/WEB-INF/jsp/registerView.jsp");
         dispatcher.forward(request, response);
     }
 
     /**
-     * フォームから送られた内容で新規登録を行う。
+     * 旧JSPフォーム互換の登録処理。
+     *
+     * <p>Phase10以降の通常導線では使わないが、段階移行中に古いフォームからPOSTされても
+     * 既存仕様で登録できるよう残している。</p>
      */
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {

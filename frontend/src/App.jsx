@@ -12,6 +12,7 @@ import FollowList from "./components/FollowList.jsx";
 import Header from "./components/Header.jsx";
 import MutterList from "./components/MutterList.jsx";
 import PostForm from "./components/PostForm.jsx";
+import RegisterPage from "./components/RegisterPage.jsx";
 import SearchForm from "./components/SearchForm.jsx";
 
 const PAGE_LIMIT = 20;
@@ -94,6 +95,10 @@ export default function App() {
   useEffect(() => {
     let active = true;
     async function initialize() {
+      if (pageKind === "register") {
+        setLoading(false);
+        return;
+      }
       requestInFlight.current = true;
       try {
         const sessionUser = await fetchSession();
@@ -147,6 +152,10 @@ export default function App() {
         type={followListType}
       />
     );
+  }
+
+  if (pageKind === "register") {
+    return <RegisterPage contextPath={contextPath} />;
   }
 
   /** 投稿作成後は検索条件を解除し、最新一覧を再取得する。 */

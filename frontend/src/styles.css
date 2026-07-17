@@ -43,6 +43,12 @@ section, .mutter-card {
 .mutter-actions, .dialog-actions { justify-content: flex-end; }
 .load-more { width: 100%; }
 
+.form-field {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0;
+}
+
 .follow-list {
   padding-left: 0;
   list-style: none;

@@ -7,11 +7,12 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.jsx";
-import { configureApi } from "./api.js";
+import { configureApi, configureCsrfToken } from "./api.js";
 import "./styles.css";
 
 const rootElement = document.getElementById("root");
 configureApi(document.body.dataset.contextPath || "");
+configureCsrfToken(document.body.dataset.csrfToken || "");
 
 createRoot(rootElement).render(
   <StrictMode>

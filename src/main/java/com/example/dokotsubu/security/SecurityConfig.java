@@ -63,6 +63,8 @@ public class SecurityConfig {
                         .dispatcherTypeMatchers(DispatcherType.FORWARD, DispatcherType.ERROR).permitAll()
                         .requestMatchers("/", "/index.jsp", "/Login", "/Register", "/error",
                                 "/favicon.ico", "/css/**", "/js/**", "/react/**").permitAll()
+                        // Phase10で登録処理をReact + JSON APIへ移した。未ログインで使うが、POST時のCSRF保護は維持する。
+                        .requestMatchers(HttpMethod.POST, "/api/register").permitAll()
                         .anyRequest().authenticated())
                 .formLogin(form -> form
                         .loginPage("/index.jsp")

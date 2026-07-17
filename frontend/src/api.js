@@ -13,6 +13,16 @@ export function configureApi(path) {
   contextPath = path;
 }
 
+/**
+ * JSPホストから渡されたCSRFトークンを保持する。
+ *
+ * ログイン後画面では `/api/session` から取得するが、未ログインで使う登録画面では
+ * registerView.jsp のdata属性から受け取ったトークンを使う。
+ */
+export function configureCsrfToken(token) {
+  csrfToken = token || null;
+}
+
 /** fetchの共通処理。CSRF付与、401時のログイン画面遷移、JSONエラーの取り出しを担う。 */
 async function request(path, options = {}) {
   const method = (options.method || "GET").toUpperCase();
@@ -109,4 +119,12 @@ export function followUser(followeeId) {
 export function fetchFollowList({ userId, type }) {
   const query = new URLSearchParams({ userId, type });
   return request(`/api/follows?${query}`);
+}
+
+/** 新しいユーザーを登録する。未ログイン画面から呼ぶため、JSPホスト由来のCSRFトークンを使う。 */
+export function registerUser({ name, pass }) {
+  return request("/api/register", {
+    method: "POST",
+    body: JSON.stringify({ name, pass })
+  });
 }
