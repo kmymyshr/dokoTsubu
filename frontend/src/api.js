@@ -1,11 +1,19 @@
+/**
+ * React画面からバックエンドAPIを呼び出すための薄いクライアント。
+ *
+ * Phase6ではメイン画面の投稿一覧・投稿作成・検索・編集・削除をReactへ寄せるため、
+ * fetch処理、CSRFヘッダー付与、共通エラー処理をこのファイルへ集約している。
+ */
 const protectedMethods = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 let contextPath = "";
 let csrfToken = null;
 
+/** JSPホストから渡されたcontextPathを保持し、どの環境でも同じAPIパスを組み立てる。 */
 export function configureApi(path) {
   contextPath = path;
 }
 
+/** fetchの共通処理。CSRF付与、401時のログイン画面遷移、JSONエラーの取り出しを担う。 */
 async function request(path, options = {}) {
   const method = (options.method || "GET").toUpperCase();
   if (protectedMethods.has(method) && !csrfToken) {
@@ -33,19 +41,21 @@ async function request(path, options = {}) {
       const error = await response.json();
       message = error.message || message;
     } catch (_) {
-      // JSON以外のエラーでは共通メッセージを使う。
+      // HTMLエラーなどJSON以外が返った場合は、共通メッセージをそのまま使う。
     }
     throw new Error(message);
   }
   return response.status === 204 ? null : response.json();
 }
 
+/** 初期表示時にログインユーザーとCSRFトークンを取得する。 */
 export async function fetchSession() {
   const session = await request("/api/session");
   csrfToken = session.csrfToken;
   return { id: session.id, name: session.name, csrfToken: session.csrfToken };
 }
 
+/** 投稿一覧を取得する。keyword/cursor/limitはReact側の検索・追加読み込みで使う。 */
 export function fetchMutterPage({ keyword = "", cursor = null, limit = 20 }) {
   const query = new URLSearchParams({ limit });
   if (keyword) query.set("keyword", keyword);
@@ -53,6 +63,7 @@ export function fetchMutterPage({ keyword = "", cursor = null, limit = 20 }) {
   return request(`/api/mutters?${query}`);
 }
 
+/** 新しい投稿を作成する。 */
 export function createMutter(text) {
   return request("/api/mutters", {
     method: "POST",
@@ -60,6 +71,7 @@ export function createMutter(text) {
   });
 }
 
+/** 既存投稿を更新する。versionは楽観ロックのために送る。 */
 export function updateMutter(id, text, version) {
   return request(`/api/mutters/${id}`, {
     method: "PUT",
@@ -67,10 +79,12 @@ export function updateMutter(id, text, version) {
   });
 }
 
+/** 既存投稿を削除する。 */
 export function deleteMutter(id) {
   return request(`/api/mutters/${id}`, { method: "DELETE" });
 }
 
+/** 投稿のいいね状態を切り替える。 */
 export function likeMutter(mutterId) {
   return request(`/LikeMutter`, {
     method: "POST",
@@ -78,6 +92,7 @@ export function likeMutter(mutterId) {
   });
 }
 
+/** 投稿者へのフォロー状態を切り替える。 */
 export function followUser(followeeId) {
   return request(`/FollowUser`, {
     method: "POST",

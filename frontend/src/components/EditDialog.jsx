@@ -1,3 +1,9 @@
+/**
+ * 投稿編集ダイアログ。
+ *
+ * 旧JSPの編集画面へ遷移せず、React画面上で編集できるようにするためのコンポーネント。
+ * 保存時には投稿ID・本文・versionをAppへ渡し、REST APIで楽観ロック付き更新を行う。
+ */
 import { useEffect, useState } from "react";
 
 export default function EditDialog({ mutter, saving, onCancel, onSave }) {

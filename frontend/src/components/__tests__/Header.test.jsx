@@ -11,6 +11,9 @@ describe("Header", () => {
       />
     );
 
+    expect(html).toContain("alice さん、ログイン中です");
+    expect(html).toContain("マイページ");
+    expect(html).toContain("ログアウト");
     expect(html).toContain('action="/dokoTsubu/Logout"');
     expect(html).toContain('method="post"');
     expect(html).toContain('name="_csrf"');

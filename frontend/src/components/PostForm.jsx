@@ -1,3 +1,9 @@
+/**
+ * 投稿作成フォーム。
+ *
+ * Phase6で旧JSPフォームからReactフォームへ移した部分。送信時は画面遷移せず、
+ * Appから渡されたonSubmit経由でREST APIへ投稿する。
+ */
 import { useState } from "react";
 
 export default function PostForm({ onSubmit, disabled }) {

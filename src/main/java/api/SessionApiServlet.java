@@ -3,7 +3,6 @@ package api;
 import java.io.IOException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import dto.ApiErrorResponse;
 import dto.SessionUserResponse;
 import jakarta.servlet.ServletException;
@@ -17,27 +16,27 @@ import org.springframework.security.web.csrf.CsrfToken;
 import util.ObjectMapperFactory;
 
 /**
- * JavaScript 画面向けに、ログイン中ユーザーの公開情報を返す API です。
- * フロントエンドが現在のログイン状態を確認するために使います。
+ * React画面向けに、現在ログイン中のユーザー情報とCSRFトークンを返すAPI。
+ *
+ * <p>Phase6でメイン画面をReactへ寄せるため、Reactは初期表示時にこのAPIを呼び、
+ * セッション上のユーザー名・ユーザーID・CSRFトークンを取得する。以降のPOST/PUT/DELETEでは
+ * ここで受け取ったCSRFトークンを `X-CSRF-Token` ヘッダーとして送信する。</p>
  */
 @WebServlet("/api/session")
 public class SessionApiServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
     private static final ObjectMapper OBJECT_MAPPER = ObjectMapperFactory.getObjectMapper();
 
-    /**
-     * セッションにログインユーザーがあるか確認し、結果を JSON で返す。
-     */
+    /** セッションにログインユーザーがいればJSONで返し、未ログインなら401を返す。 */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        // 1. セッションからログインユーザーを取得する。
         HttpSession session = request.getSession(false);
         User loginUser = session == null ? null : (User) session.getAttribute("loginUser");
+
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
 
-        // 2. ログインしていなければエラーを返す。
         if (loginUser == null) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             OBJECT_MAPPER.writeValue(response.getWriter(),
@@ -45,7 +44,7 @@ public class SessionApiServlet extends HttpServlet {
             return;
         }
 
-        // 3. ログイン済みなら、ユーザー情報と CSRF トークンを返す。
+        // Spring Securityがリクエスト属性に置いたCSRFトークンをReactへ渡す。
         CsrfToken csrfToken = (CsrfToken) request.getAttribute(CsrfToken.class.getName());
         OBJECT_MAPPER.writeValue(response.getWriter(),
                 SessionUserResponse.from(loginUser, csrfToken.getToken()));
