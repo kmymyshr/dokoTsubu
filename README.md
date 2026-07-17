@@ -24,11 +24,11 @@ Java Servlet / JSP をベースに開発し、**React + REST API**
   分類        技術
   ----------- ---------------------------
   Language    Java 21
-  Backend     Jakarta Servlet 6 / JSP
+  Backend     Spring Boot 3.5 / Jakarta Servlet 6 / JSP
   Frontend    React 19 / Vite
   Database    PostgreSQL / H2
   Build       Maven
-  Container   Docker / Tomcat 11
+  Container   Docker / Embedded Tomcat 10.1
   Deploy      Render
   Test        JUnit5 / Mockito / Vitest
 
@@ -48,6 +48,38 @@ Requestを対象に、以下を自動実行します。
 
 ``` shell
 mvn --batch-mode --no-transfer-progress clean verify
+```
+
+------------------------------------------------------------------------
+
+# ローカル実行
+
+Spring Bootの実行可能WARとして起動します。H2 Serverを既定値で利用する場合は、
+次のコマンドで起動後に `http://localhost:8080/dokoTsubu/` へアクセスします。
+
+``` shell
+mvn spring-boot:run
+```
+
+PostgreSQLなど別のデータベースを利用する場合は、環境変数で接続先を指定します。
+
+``` text
+DB_URL=jdbc:postgresql://localhost:5432/dokotsubu
+DB_USER=dokotsubu
+DB_PASSWORD=change-me
+DB_MAXIMUM_POOL_SIZE=10
+PORT=8080
+```
+
+Dockerでは次のように起動できます。
+
+``` shell
+docker build -t dokotsubu .
+docker run --rm -p 8080:8080 \
+  -e DB_URL=jdbc:postgresql://host.docker.internal:5432/dokotsubu \
+  -e DB_USER=dokotsubu \
+  -e DB_PASSWORD=change-me \
+  dokotsubu
 ```
 
 ------------------------------------------------------------------------
@@ -74,6 +106,8 @@ Browser
 React / JSP
     │
 REST API
+    │
+Spring Boot
     │
 Logic
     │
@@ -119,7 +153,6 @@ APIを追加しながらReactへ段階的に移行しました。既存資産を
 
 # 今後の改善予定
 
--   Spring Bootへの移行
 -   Spring Security導入
 -   Flywayによるマイグレーション管理
 -   Spring Data JDBCへの移行

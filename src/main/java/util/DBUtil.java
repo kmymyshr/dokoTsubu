@@ -3,6 +3,8 @@ package util;
 import java.sql.Connection;
 import java.sql.SQLException;
 
+import javax.sql.DataSource;
+
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 
@@ -17,9 +19,14 @@ public class DBUtil {
     private static final String DEFAULT_DB_USER = "sa";
     private static final String DEFAULT_DB_PASS = "";
     private static final int DEFAULT_MAXIMUM_POOL_SIZE = 10;
+    private static volatile DataSource managedDataSource;
     private static volatile PoolHolder poolHolder;
 
     public static Connection getConnection() throws SQLException {
+        DataSource currentDataSource = managedDataSource;
+        if (currentDataSource != null) {
+            return currentDataSource.getConnection();
+        }
         String url = getSetting("db.url", "DB_URL", DEFAULT_JDBC_URL);
         String user = getSetting("db.user", "DB_USER", DEFAULT_DB_USER);
         String password = getSetting("db.password", "DB_PASSWORD", DEFAULT_DB_PASS);
@@ -27,6 +34,28 @@ public class DBUtil {
                 "db.maximumPoolSize", "DB_MAXIMUM_POOL_SIZE", DEFAULT_MAXIMUM_POOL_SIZE);
         PoolSettings settings = new PoolSettings(url, user, password, maximumPoolSize);
         return getOrCreateDataSource(settings).getConnection();
+    }
+
+    /**
+     * Switches the legacy DAO layer to a container-managed DataSource.
+     *
+     * <p>The DataSource lifecycle remains owned by Spring. Any fallback pool
+     * previously created by this class is closed when the managed source is
+     * attached.</p>
+     */
+    public static synchronized void useDataSource(DataSource dataSource) {
+        if (dataSource == null) {
+            throw new IllegalArgumentException("dataSource must not be null");
+        }
+        closeFallbackPool();
+        managedDataSource = dataSource;
+    }
+
+    /** Detaches the managed source without closing it. */
+    public static synchronized void clearDataSource(DataSource dataSource) {
+        if (managedDataSource == dataSource) {
+            managedDataSource = null;
+        }
     }
 
     private static HikariDataSource getOrCreateDataSource(PoolSettings settings) throws SQLException {
@@ -61,6 +90,10 @@ public class DBUtil {
 
     /** Closes the application pool during web-application shutdown. */
     public static synchronized void shutdown() {
+        closeFallbackPool();
+    }
+
+    private static void closeFallbackPool() {
         PoolHolder current = poolHolder;
         poolHolder = null;
         if (current != null) {
