@@ -1,0 +1,54 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>フォロー中一覧</title>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/react/assets/main.css">
+</head>
+<body data-context-path="${pageContext.request.contextPath}">
+    <main style="max-width: 720px; margin: 0 auto; padding: 24px;">
+        <p><a href="${pageContext.request.contextPath}/Profile?userId=${targetUser.id}">プロフィールへ戻る</a></p>
+
+        <section class="profile-card">
+            <h1>${targetUser.name} さんのフォロー中</h1>
+            <p>合計: <span id="listCount">${followingCount}</span> 人</p>
+
+            <c:choose>
+                <c:when test="${empty followingUsers}">
+                    <p id="emptyState">まだフォローしているユーザーはいません。</p>
+                </c:when>
+                <c:otherwise>
+                    <p id="emptyState" style="display: none;">まだフォローしているユーザーはいません。</p>
+                    <ul id="followList">
+                        <c:forEach var="followingUser" items="${followingUsers}">
+                            <li data-user-id="${followingUser.id}" style="display: flex; gap: 12px; align-items: center; margin: 8px 0;">
+                                <a href="${pageContext.request.contextPath}/Profile?userId=${followingUser.id}">
+                                    ${followingUser.name}
+                                </a>
+                                <c:if test="${currentUserId ne followingUser.id}">
+                                    <button
+                                        type="button"
+                                        class="follow-toggle"
+                                        data-user-id="${followingUser.id}"
+                                        data-following="${followedUserIds.contains(followingUser.id)}"
+                                        data-remove-on-unfollow="${listOwnerIsLoginUser}">
+                                        <c:choose>
+                                            <c:when test="${followedUserIds.contains(followingUser.id)}">フォロー済</c:when>
+                                            <c:otherwise>フォロー</c:otherwise>
+                                        </c:choose>
+                                    </button>
+                                </c:if>
+                            </li>
+                        </c:forEach>
+                    </ul>
+                    <p id="followActionMessage" role="status"></p>
+                    <script src="${pageContext.request.contextPath}/js/followList.js"></script>
+                </c:otherwise>
+            </c:choose>
+        </section>
+    </main>
+</body>
+</html>

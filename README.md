@@ -1,0 +1,137 @@
+# dokoTsubu
+
+[![CI](https://github.com/kmymyshr/dokoTsubu/actions/workflows/ci.yml/badge.svg)](https://github.com/kmymyshr/dokoTsubu/actions/workflows/ci.yml)
+
+Java Servlet / JSP をベースに開発し、**React + REST API**
+へ段階的に移行しているミニSNSアプリです。
+
+ユーザー登録・投稿・検索・いいね・フォローなどの基本機能に加え、CSRF対策や楽観ロックなど、Webアプリケーション開発で重要となる要素を実装しています。
+
+------------------------------------------------------------------------
+
+# デモ
+
+-   **URL**：https://dokotsubu-j38p.onrender.com/dokoTsubu/Main
+-   **テストユーザー**：
+    -   ID：demo_user1	
+    -   Password：DemoPass_101!
+
+
+------------------------------------------------------------------------
+
+# 使用技術
+
+  分類        技術
+  ----------- ---------------------------
+  Language    Java 21
+  Backend     Jakarta Servlet 6 / JSP
+  Frontend    React 19 / Vite
+  Database    PostgreSQL / H2
+  Build       Maven
+  Container   Docker / Tomcat 11
+  Deploy      Render
+  Test        JUnit5 / Mockito / Vitest
+
+------------------------------------------------------------------------
+
+# CI
+
+GitHub Actionsで、`main`ブランチへのpushと`main`ブランチ向けのPull
+Requestを対象に、以下を自動実行します。
+
+- Java・Reactのテスト
+- Viteの本番ビルド
+- WARファイルの生成と成果物保存
+- Dockerイメージのビルド確認
+
+ローカルでは次のコマンドで、テストからWAR生成までを確認できます。
+
+``` shell
+mvn --batch-mode --no-transfer-progress clean verify
+```
+
+------------------------------------------------------------------------
+
+# 主な機能
+
+-   ユーザー登録・ログイン
+-   投稿・編集・削除
+-   キーワード検索
+-   いいね機能
+-   フォロー機能
+-   REST API
+-   5秒ごとの自動更新
+-   CSRF対策
+-   楽観ロックによる更新競合防止
+
+------------------------------------------------------------------------
+
+# アーキテクチャ
+
+``` text
+Browser
+    │
+React / JSP
+    │
+REST API
+    │
+Logic
+    │
+DAO
+    │
+PostgreSQL / H2
+```
+
+画面表示（React）、業務処理（Logic）、データアクセス（DAO）の責務を分離し、ReactとバックエンドはREST APIを介して通信することで、互いの実装に依存しにくい疎結合な構成としています。
+
+------------------------------------------------------------------------
+
+# 工夫した点
+
+## Reactへの段階的移行
+
+既存のServlet / JSPアプリを一度に作り直すのではなく、REST
+APIを追加しながらReactへ段階的に移行しました。既存資産を活かしつつモダナイズする構成を意識しています。
+
+## セキュリティ
+
+-   CSRF対策を実装
+-   パスワードをBCryptでハッシュ化
+-   更新時は楽観ロックを採用し、同時編集による競合を防止
+
+## データベース設計
+
+公開環境ではPostgreSQLを採用し、
+
+-   外部キー制約
+-   UNIQUE制約
+-   NOT NULL制約
+
+を設定することでデータ整合性を担保しています。
+
+## 保守性
+
+-   DAO・Logic・Servletで責務を分離
+-   DTOを利用してAPIレスポンスを整理
+-   ReactからREST API経由でデータ取得を行う構成にしています。
+
+------------------------------------------------------------------------
+
+# 今後の改善予定
+
+-   Spring Bootへの移行
+-   Spring Security導入
+-   Flywayによるマイグレーション管理
+-   Spring Data JDBCへの移行
+-   CI/CDの構築
+-   旧JSP画面のReact統合
+
+------------------------------------------------------------------------
+
+# 学習を通して
+
+本プロジェクトでは、従来型のJava
+Webアプリケーションをベースに、React・REST
+API・Docker・PostgreSQLなどを組み合わせながら、段階的にモダンな構成へ移行する開発を行いました。
+
+機能追加だけでなく、保守性・セキュリティ・データ整合性を意識した設計と改善を重視しています。

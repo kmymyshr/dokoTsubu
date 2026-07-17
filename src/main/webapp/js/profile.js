@@ -1,0 +1,63 @@
+(function () {
+  const root = document.getElementById("profileFollow");
+  if (!root) return;
+
+  const button = document.getElementById("followButton");
+  const message = document.getElementById("followMessage");
+  const followersCount = document.getElementById("followersCount");
+  const contextPath = document.body.dataset.contextPath || "";
+  const followeeId = Number(root.dataset.userId);
+  let followed = root.dataset.following === "true";
+
+  function updateButton() {
+    button.textContent = followed ? "フォロー済" : "フォロー";
+  }
+
+  async function handleFollowClick() {
+    if (followed && !window.confirm("フォローを解除しますか？")) {
+      return;
+    }
+
+    button.disabled = true;
+    message.textContent = "";
+
+    try {
+      const response = await fetch(`${contextPath}/FollowUser`, {
+        method: "POST",
+        credentials: "same-origin",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ followeeId })
+      });
+
+      if (!response.ok) {
+        let errorMessage = "フォロー処理に失敗しました";
+        try {
+          const error = await response.json();
+          errorMessage = error.message || errorMessage;
+        } catch (_) {
+          // ignore
+        }
+        throw new Error(errorMessage);
+      }
+
+      const result = await response.json();
+      followed = Boolean(result.following);
+      root.dataset.following = String(followed);
+      updateButton();
+      if (followersCount) {
+        followersCount.textContent = `フォロワー: ${Number(result.followers)}`;
+      }
+      message.textContent = followed ? "フォローしました" : "フォローを解除しました";
+    } catch (error) {
+      message.textContent = error.message || "フォロー処理に失敗しました";
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  updateButton();
+  button.addEventListener("click", handleFollowClick);
+}());
