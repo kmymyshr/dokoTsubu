@@ -2,6 +2,8 @@ package servlet;
 
 import java.io.IOException;
 
+import com.example.dokotsubu.service.ApplicationServiceBridge;
+import com.example.dokotsubu.service.SocialService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -11,23 +13,26 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import model.FollowUserLogic;
 import model.User;
 import util.ObjectMapperFactory;
 
 /**
- * React/JSP双方から利用する、フォロー切り替え用のServlet。
+ * フォロー状態を切り替えるJSON用Servlet。
  *
- * <p>Phase6ではメイン画面のフォローボタンをReactから呼び出すため、JSONリクエストを受け取り、
- * 切り替え後のフォロー状態とフォロワー数をJSONで返す。実処理は旧Logic互換層を通じて
- * SocialServiceへ委譲している。</p>
+ * <p>React画面から利用される既存URLを維持しつつ、Phase19で旧Logicラッパーを撤去した。
+ * このServletはHTTP/JSONの入出力とログイン確認を担当し、実際のフォロー更新は
+ * {@link SocialService} に委譲する。</p>
  */
 @WebServlet("/FollowUser")
 public class FollowUser extends HttpServlet {
     private static final long serialVersionUID = 1L;
     private static final ObjectMapper OBJECT_MAPPER = ObjectMapperFactory.getObjectMapper();
 
-    /** フォロー状態を切り替え、画面更新に必要な状態をJSONで返す。 */
+    /**
+     * JSON本文のfolloweeIdを受け取り、フォローON/OFFを切り替える。
+     *
+     * <p>レスポンスには、切り替え後のフォロー状態と対象ユーザーのフォロワー数を返す。</p>
+     */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -40,20 +45,7 @@ public class FollowUser extends HttpServlet {
             return;
         }
 
-        JsonNode body;
-        try {
-            body = OBJECT_MAPPER.readTree(request.getReader());
-        } catch (JsonProcessingException e) {
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "JSONの形式が不正です");
-            return;
-        }
-
-        Integer followeeId = null;
-        if (body != null && body.has("followeeId")) {
-            JsonNode idNode = body.get("followeeId");
-            if (idNode.isInt()) followeeId = idNode.asInt();
-            else if (idNode.isTextual()) followeeId = parsePositiveInteger(idNode.asText());
-        }
+        Integer followeeId = readId(request, "followeeId");
         if (followeeId == null) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "followeeIdが不正です");
             return;
@@ -63,16 +55,35 @@ public class FollowUser extends HttpServlet {
             return;
         }
 
-        FollowUserLogic logic = new FollowUserLogic();
-        boolean following = logic.execute(loginUser.getId(), followeeId);
-        int followers = logic.countFollowers(followeeId);
+        SocialService social = ApplicationServiceBridge.social();
+        boolean following = social.toggleFollow(loginUser.getId(), followeeId);
+        int followers = social.countFollowers(followeeId);
 
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
         response.getWriter().write("{\"following\":" + following + ",\"followers\":" + followers + "}");
     }
 
-    /** JSON内のfolloweeIdが文字列で送られた場合にも安全に扱う。 */
+    /** JSON本文から指定されたID項目を正の整数として読み取る。 */
+    private Integer readId(HttpServletRequest request, String fieldName) throws IOException {
+        JsonNode body;
+        try {
+            body = OBJECT_MAPPER.readTree(request.getReader());
+        } catch (JsonProcessingException e) {
+            return null;
+        }
+        if (body == null || !body.has(fieldName)) {
+            return null;
+        }
+        JsonNode idNode = body.get(fieldName);
+        if (idNode.isInt()) {
+            int id = idNode.asInt();
+            return id > 0 ? id : null;
+        }
+        return idNode.isTextual() ? parsePositiveInteger(idNode.asText()) : null;
+    }
+
+    /** 文字列で送られたIDも安全に扱えるよう、正の整数だけを受け入れる。 */
     private Integer parsePositiveInteger(String value) {
         if (value == null || value.isBlank()) {
             return null;

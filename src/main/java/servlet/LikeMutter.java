@@ -3,6 +3,7 @@ package servlet;
 import java.io.IOException;
 
 import com.example.dokotsubu.service.ApplicationServiceBridge;
+import com.example.dokotsubu.service.SocialService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -12,24 +13,27 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import model.LikeMutterLogic;
 import model.Mutter;
 import model.User;
 import util.ObjectMapperFactory;
 
 /**
- * 旧画面/React双方から利用する、いいね切り替え用のServlet。
+ * 投稿へのいいね状態を切り替えるJSON用Servlet。
  *
- * <p>REST API専用のURLではないが、非同期処理としてJSONを受け取りJSONを返す。
- * Phase5では投稿存在確認をMutterServiceへ、いいね状態の更新をLikeMutterLogic経由で
- * SocialServiceへ委譲している。</p>
+ * <p>React画面から利用される既存URLを維持しつつ、Phase19で旧Logicラッパーを撤去した。
+ * このServletはHTTP/JSONの入出力と投稿存在確認を担当し、いいね更新は
+ * {@link SocialService} に委譲する。</p>
  */
 @WebServlet("/LikeMutter")
 public class LikeMutter extends HttpServlet {
     private static final long serialVersionUID = 1L;
     private static final ObjectMapper OBJECT_MAPPER = ObjectMapperFactory.getObjectMapper();
 
-    /** いいね状態を切り替え、切り替え後の状態と件数をJSONで返す。 */
+    /**
+     * JSON本文のmutterIdを受け取り、いいねON/OFFを切り替える。
+     *
+     * <p>自分の投稿へのいいねは禁止し、切り替え後の状態といいね数をJSONで返す。</p>
+     */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -42,27 +46,12 @@ public class LikeMutter extends HttpServlet {
             return;
         }
 
-        // React側からJSONで送られるため、通常のrequest parameterではなくbodyを読む。
-        JsonNode body;
-        try {
-            body = OBJECT_MAPPER.readTree(request.getReader());
-        } catch (JsonProcessingException e) {
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "JSONの形式が不正です");
-            return;
-        }
-
-        Integer mutterId = null;
-        if (body != null && body.has("mutterId")) {
-            JsonNode idNode = body.get("mutterId");
-            if (idNode.isInt()) mutterId = idNode.asInt();
-            else if (idNode.isTextual()) mutterId = parsePositiveInteger(idNode.asText());
-        }
+        Integer mutterId = readId(request, "mutterId");
         if (mutterId == null) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "mutterIdが不正です");
             return;
         }
 
-        // 自分の投稿にいいねできない既存仕様を、Service更新前にServlet側で明示的に守る。
         Mutter target = ApplicationServiceBridge.mutters().findById(mutterId);
         if (target == null) {
             response.sendError(HttpServletResponse.SC_NOT_FOUND, "指定された投稿は存在しません");
@@ -73,16 +62,35 @@ public class LikeMutter extends HttpServlet {
             return;
         }
 
-        LikeMutterLogic logic = new LikeMutterLogic();
-        boolean liked = logic.execute(mutterId, loginUser.getId());
-        int count = logic.countLikes(mutterId);
+        SocialService social = ApplicationServiceBridge.social();
+        boolean liked = social.toggleLike(mutterId, loginUser.getId());
+        int count = social.countLikes(mutterId);
 
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
         response.getWriter().write("{\"liked\":" + liked + ",\"count\":" + count + "}");
     }
 
-    /** JSON内のmutterIdが文字列で送られた場合にも安全に扱う。 */
+    /** JSON本文から指定されたID項目を正の整数として読み取る。 */
+    private Integer readId(HttpServletRequest request, String fieldName) throws IOException {
+        JsonNode body;
+        try {
+            body = OBJECT_MAPPER.readTree(request.getReader());
+        } catch (JsonProcessingException e) {
+            return null;
+        }
+        if (body == null || !body.has(fieldName)) {
+            return null;
+        }
+        JsonNode idNode = body.get(fieldName);
+        if (idNode.isInt()) {
+            int id = idNode.asInt();
+            return id > 0 ? id : null;
+        }
+        return idNode.isTextual() ? parsePositiveInteger(idNode.asText()) : null;
+    }
+
+    /** 文字列で送られたIDも安全に扱えるよう、正の整数だけを受け入れる。 */
     private Integer parsePositiveInteger(String value) {
         if (value == null || value.isBlank()) {
             return null;
