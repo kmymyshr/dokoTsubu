@@ -1,4 +1,11 @@
 (function () {
+  /**
+   * フォロー中/フォロワー一覧のフォローボタン制御。
+   *
+   * Phase8では一覧取得APIを追加したが、既存JSP画面ではこの小さなJSで非同期操作だけを担当する。
+   * 将来React化するときは、ここで行っている「ボタン状態更新」「解除後の行削除」を
+   * Reactのstate更新へ移せばよいように、DOM操作をこのファイルに閉じ込めている。
+   */
   const buttons = Array.from(document.querySelectorAll(".follow-toggle"));
   if (buttons.length === 0) return;
 
@@ -10,17 +17,20 @@
   const followList = document.getElementById("followList");
   const message = document.getElementById("followActionMessage");
 
+  /** ボタンのdata属性と表示文言を、切り替え後の状態にそろえる。 */
   function updateButton(button, followed) {
     button.dataset.following = String(followed);
     button.textContent = followed ? "フォロー済" : "フォロー";
   }
 
+  /** 自分のフォロー中一覧で解除により行が0件になった場合、空表示を復活させる。 */
   function updateEmptyState() {
     if (!followList || !emptyState) return;
     const hasRows = followList.querySelector("li") !== null;
     emptyState.style.display = hasRows ? "none" : "";
   }
 
+  /** FollowUser ServletへJSONでPOSTし、一覧画面の表示だけを最小限更新する。 */
   async function handleClick(event) {
     const button = event.currentTarget;
     const followeeId = Number(button.dataset.userId);

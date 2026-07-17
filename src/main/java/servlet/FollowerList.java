@@ -18,7 +18,9 @@ import model.User;
  * JSP版フォロワー一覧画面を表示するServlet。
  *
  * <p>Phase5では対象ユーザーの取得をUserService経由に寄せた。フォロー関係の取得は、
- * 既存JSPとの互換を保つため、移行用のFollowUserLogicを経由してSocialServiceへ委譲している。</p>
+ * 既存JSPとの互換を保つため、移行用のFollowUserLogicを経由してSocialServiceへ委譲している。
+ * Phase8ではReact化に備えて同じ情報を返す `/api/follows?type=followers` も追加し、
+ * このServletはJSP互換画面の入口として残す。</p>
  */
 @WebServlet("/FollowerList")
 public class FollowerList extends HttpServlet {
@@ -47,6 +49,7 @@ public class FollowerList extends HttpServlet {
             return;
         }
 
+        // JSP側が一覧表示とボタン状態を組み立てられるよう、対象ユーザー・件数・フォロー済みIDをまとめて渡す。
         FollowUserLogic logic = new FollowUserLogic();
         request.setAttribute("targetUser", targetUser);
         request.setAttribute("followerUsers", logic.findFollowerUsers(userId));
