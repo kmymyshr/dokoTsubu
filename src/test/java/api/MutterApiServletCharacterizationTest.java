@@ -14,9 +14,12 @@ import static support.ServletTestSupport.withJsonBody;
 
 import java.io.StringWriter;
 
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.annotation.DirtiesContext;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -40,6 +43,12 @@ import util.ObjectMapperFactory;
  * このテストで検知できるようにしておく。
  * (モダナイゼーション計画 Phase0: 安全網構築)
  */
+@SpringBootTest(classes = com.example.dokotsubu.DokoTsubuApplication.class, properties = {
+        "spring.datasource.url=jdbc:h2:mem:dataJdbcCharacterization;DB_CLOSE_DELAY=-1",
+        "spring.datasource.username=sa",
+        "spring.datasource.password="
+})
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class MutterApiServletCharacterizationTest {
 
     private final MutterApiServlet servlet = new MutterApiServlet();
@@ -48,14 +57,12 @@ class MutterApiServletCharacterizationTest {
     private final LikeDAO likeDAO = new LikeDAO();
     private final FollowDAO followDAO = new FollowDAO();
 
-    @BeforeAll
-    static void setUpDatabase() {
-        TestDatabaseSupport.useFreshInMemoryDatabase("mutterapi_characterization");
-    }
+    @Autowired
+    private JdbcTemplate jdbc;
 
     @BeforeEach
     void resetTables() {
-        TestDatabaseSupport.clearAllTables();
+        TestDatabaseSupport.clearAllTables(jdbc);
     }
 
     private User createUser(String name) {
