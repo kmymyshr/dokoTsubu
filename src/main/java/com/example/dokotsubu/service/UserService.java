@@ -34,7 +34,10 @@ public class UserService {
 
     /**
      * 平文パスワードを受け取り、保存済みのBCryptハッシュと照合する。
-     * 旧LoginLogicから呼ばれるため、失敗時は既存仕様に合わせてnullを返す。
+     *
+     * <p>Phase16で旧LoginLogicを撤去したため、ログイン判定の業務ルールは
+     * このServiceに集約する。Spring Security側から扱いやすいよう、失敗時は
+     * 既存仕様に合わせてnullを返す。</p>
      */
     public User authenticate(String name, String rawPassword) {
         User user = findByName(name);
