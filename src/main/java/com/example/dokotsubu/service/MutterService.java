@@ -51,11 +51,6 @@ public class MutterService {
         return gateway.createMutter(mutter);
     }
 
-    /** 旧PostMutterLogicのboolean戻り値に合わせた互換メソッド。 */
-    public boolean create(Mutter mutter) {
-        return createAndReturn(mutter) != null;
-    }
-
     /** 楽観ロック用のversionを含む投稿更新をRepositoryへ委譲する。 */
     public boolean update(Mutter mutter) {
         return gateway.updateMutter(mutter);
