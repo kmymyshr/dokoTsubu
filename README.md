@@ -135,7 +135,14 @@ Phase10では、ユーザー登録画面をReact + REST APIへ移しました。
 - `Register` ServletはReactホスト表示に責務を縮小し、旧POST処理は互換用として保持
 - `registerView.jsp` はReactホストへ変更し、CSRFトークンをReactへ渡す
 
-JSPはまだログイン、プロフィールなどに残っていますが、投稿タイムライン、フォロー一覧、ユーザー登録はReact + REST API中心の構成へ移行しています。
+Phase11では、プロフィール画面をReact + REST APIへ移しました。
+
+- `ProfilePage` Reactコンポーネントを追加し、プロフィール表示、自己紹介編集、フォロー切り替えを担当
+- `/api/profile` を追加し、プロフィール表示データ取得と本人の自己紹介更新をJSON APIとして提供
+- `Profile` ServletはReactホスト表示に責務を縮小し、旧POST処理は互換用として保持
+- `profile.jsp` はReactホストへ変更し、対象ユーザーIDとCSRFトークンをReactへ渡す
+
+JSPはまだログインなどに残っていますが、投稿タイムライン、フォロー一覧、ユーザー登録、プロフィールはReact + REST API中心の構成へ移行しています。
 
 ## 主な機能
 
@@ -196,7 +203,7 @@ PostgreSQL / H2
 
 ## 今後の改善予定
 
-- ログイン、プロフィールなど残りJSPのReact統合
+- ログインなど残りJSPのReact統合
 - CI/CDの継続改善
 - 移行用の互換DAO / Logicブリッジを段階的に縮小
 - Service層とReactコンポーネントのテスト拡充

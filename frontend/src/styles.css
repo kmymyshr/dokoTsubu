@@ -49,6 +49,25 @@ section, .mutter-card {
   margin: 12px 0;
 }
 
+.form-actions {
+  margin-top: 12px;
+}
+
+.profile-stats {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin: 16px 0;
+}
+
+.profile-section {
+  margin: 24px 0;
+}
+
+.profile-section textarea {
+  width: 100%;
+}
+
 .follow-list {
   padding-left: 0;
   list-style: none;

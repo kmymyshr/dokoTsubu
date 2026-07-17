@@ -121,6 +121,20 @@ export function fetchFollowList({ userId, type }) {
   return request(`/api/follows?${query}`);
 }
 
+/** プロフィール画面の表示データを取得する。Phase11でJSP属性の代わりにこのAPIを描画元にする。 */
+export function fetchProfile(userId) {
+  const query = new URLSearchParams({ userId });
+  return request(`/api/profile?${query}`);
+}
+
+/** 自己紹介を更新する。本人プロフィールだけ更新できる制約はAPI側でも検証する。 */
+export function updateProfileBio({ userId, bio }) {
+  return request("/api/profile", {
+    method: "PUT",
+    body: JSON.stringify({ userId, bio })
+  });
+}
+
 /** 新しいユーザーを登録する。未ログイン画面から呼ぶため、JSPホスト由来のCSRFトークンを使う。 */
 export function registerUser({ name, pass }) {
   return request("/api/register", {

@@ -12,6 +12,7 @@ import FollowList from "./components/FollowList.jsx";
 import Header from "./components/Header.jsx";
 import MutterList from "./components/MutterList.jsx";
 import PostForm from "./components/PostForm.jsx";
+import ProfilePage from "./components/ProfilePage.jsx";
 import RegisterPage from "./components/RegisterPage.jsx";
 import SearchForm from "./components/SearchForm.jsx";
 
@@ -104,7 +105,7 @@ export default function App() {
         const sessionUser = await fetchSession();
         if (!active) return;
         setUser(sessionUser);
-        if (pageKind === "follow-list") {
+        if (pageKind === "follow-list" || pageKind === "profile") {
           return;
         }
         const result = await fetchMutterPage({ limit: PAGE_LIMIT });
@@ -156,6 +157,16 @@ export default function App() {
 
   if (pageKind === "register") {
     return <RegisterPage contextPath={contextPath} />;
+  }
+
+  if (pageKind === "profile") {
+    return (
+      <ProfilePage
+        contextPath={contextPath}
+        sessionUser={user}
+        userId={targetUserId}
+      />
+    );
   }
 
   /** 投稿作成後は検索条件を解除し、最新一覧を再取得する。 */

@@ -15,11 +15,10 @@ import model.FollowUserLogic;
 import model.User;
 
 /**
- * プロフィール画面を表示・更新するServlet。
+ * プロフィール画面の入口Servlet。
  *
- * <p>Phase7では、プロフィール画面を今後Reactへ置き換えやすくするために、Servletの責務を
- * 「認証確認」「表示用データの準備」「自己紹介更新」に整理している。DBアクセスはService層へ委譲し、
- * JSPは受け取った属性を表示するだけに近づける。</p>
+ * <p>Phase11でプロフィール画面をReact化したため、GETはReactホストJSPへ対象ユーザーIDを渡すだけに縮小する。
+ * POSTは旧JSPフォーム互換として残すが、通常の表示・更新はReactから `/api/profile` を呼ぶ。</p>
  */
 @WebServlet("/Profile")
 public class Profile extends HttpServlet {
@@ -27,10 +26,10 @@ public class Profile extends HttpServlet {
     private static final int MAX_BIO_LENGTH = 160;
 
     /**
-     * プロフィール画面を表示する。
+     * Reactプロフィール画面を読み込むJSPホストへforwardする。
      *
-     * <p>本人プロフィールでは自己紹介編集フォームを表示し、他ユーザーのプロフィールでは
-     * フォローボタン用の状態を渡す。</p>
+     * <p>対象ユーザーが存在するかはここで確認し、React側には対象IDだけを渡す。
+     * 実際の表示データは `/api/profile` から取得する。</p>
      */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -55,16 +54,16 @@ public class Profile extends HttpServlet {
             return;
         }
 
-        prepareProfileAttributes(request, loginUser, profileUser);
+        request.setAttribute("targetUserId", profileUser.getId());
         RequestDispatcher dispatcher = request.getRequestDispatcher("/WEB-INF/jsp/profile.jsp");
         dispatcher.forward(request, response);
     }
 
     /**
-     * 自己紹介を更新する。
+     * 旧JSPフォーム互換の自己紹介更新処理。
      *
-     * <p>本人以外のプロフィール更新を防ぐため、URLパラメータのuserIdとセッションユーザーIDを照合する。
-     * React化後も同じ制約をAPI側に移せるよう、更新ルールをServlet内で明示している。</p>
+     * <p>Phase11以降の通常導線では `/api/profile` のPUTを使うが、段階移行中に古いフォームから
+     * POSTされても既存仕様で更新できるよう残している。</p>
      */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
