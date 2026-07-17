@@ -114,6 +114,13 @@ Phase7では、プロフィール画面を今後React化しやすいJSP互換画
 - `profile.jsp` の表示文言を日本語化し、JSP側の責務を表示と最小限のフォームに限定
 - `profile.js` のフォロー切り替え処理を日本語化し、将来Reactコンポーネントへ置き換えやすい形に整理
 
+Phase8では、フォロー中/フォロワー一覧をReact化するためのAPIと画面整理を追加しました。
+
+- `/api/follows` でフォロー中/フォロワー一覧をJSONとして取得可能
+- `FollowListResponse` / `FollowUserSummaryResponse` で一覧表示用DTOを追加
+- `followerList.jsp` / `followingList.jsp` はJSP互換を維持しつつ、React化時の置き換え箇所が分かるようコメントを追加
+- `followList.js` は既存JSP画面の非同期フォロー操作に責務を限定
+
 JSPはまだログイン、登録、プロフィール、フォロー一覧などに残っていますが、投稿タイムラインはReact + REST API中心の構成へ移行しています。
 
 ## 主な機能
