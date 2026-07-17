@@ -112,14 +112,14 @@ Phase7では、プロフィール画面を今後React化しやすいJSP互換画
 
 - `Profile` Servletの責務を認証確認、表示用データ準備、自己紹介更新に整理
 - `profile.jsp` の表示文言を日本語化し、JSP側の責務を表示と最小限のフォームに限定
-- `profile.js` のフォロー切り替え処理を日本語化し、将来Reactコンポーネントへ置き換えやすい形に整理
+- 当時のJSP向けフォロー切り替え処理を整理し、後続PhaseのReactコンポーネントへ移しやすい形に変更
 
 Phase8では、フォロー中/フォロワー一覧をReact化するためのAPIと画面整理を追加しました。
 
 - `/api/follows` でフォロー中/フォロワー一覧をJSONとして取得可能
 - `FollowListResponse` / `FollowUserSummaryResponse` で一覧表示用DTOを追加
 - `followerList.jsp` / `followingList.jsp` はJSP互換を維持しつつ、React化時の置き換え箇所が分かるようコメントを追加
-- 既存JSP画面の非同期フォロー操作は `followList.js` に一時的に集約
+- 既存JSP画面の非同期フォロー操作を、後続PhaseのReact化に向けて一時的に集約
 
 Phase9では、フォロー中/フォロワー一覧の表示をReactへ移しました。
 
@@ -149,6 +149,12 @@ Phase12では、ログイン画面をReactホストへ移しました。
 - 認証処理はSpring Securityの `/Login` フォーム認証を維持
 - ログイン成功時は `Main` へredirectし、失敗/ログアウト後はReactログイン画面へ戻す
 - `loginResult.jsp` / `logout.jsp` は互換用として残存
+
+Phase13では、React移行後に参照されなくなった旧静的フロント資産を削除しました。
+
+- `src/main/webapp/js/` 配下の旧JSP向けJavaScriptを削除
+- `src/main/webapp/css/main.css` を削除し、Reactビルド成果物のCSSへ一本化
+- Spring Securityの公開静的パスから未使用の `/css/**` と `/js/**` を削除
 
 JSPは一部の互換画面や編集画面に残っていますが、投稿タイムライン、フォロー一覧、ユーザー登録、プロフィール、ログインはReact中心の構成へ移行しています。
 
