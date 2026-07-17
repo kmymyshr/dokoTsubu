@@ -2,6 +2,7 @@ package servlet;
 
 import java.io.IOException;
 
+import com.example.dokotsubu.service.ApplicationServiceBridge;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -11,21 +12,29 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import dao.MutterDAO;
 import model.LikeMutterLogic;
 import model.Mutter;
 import model.User;
 import util.ObjectMapperFactory;
 
+/**
+ * 旧画面/React双方から利用する、いいね切り替え用のServlet。
+ *
+ * <p>REST API専用のURLではないが、非同期処理としてJSONを受け取りJSONを返す。
+ * Phase5では投稿存在確認をMutterServiceへ、いいね状態の更新をLikeMutterLogic経由で
+ * SocialServiceへ委譲している。</p>
+ */
 @WebServlet("/LikeMutter")
 public class LikeMutter extends HttpServlet {
     private static final long serialVersionUID = 1L;
     private static final ObjectMapper OBJECT_MAPPER = ObjectMapperFactory.getObjectMapper();
 
+    /** いいね状態を切り替え、切り替え後の状態と件数をJSONで返す。 */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         request.setCharacterEncoding("UTF-8");
+
         HttpSession session = request.getSession(false);
         User loginUser = session == null ? null : (User) session.getAttribute("loginUser");
         if (loginUser == null) {
@@ -33,7 +42,7 @@ public class LikeMutter extends HttpServlet {
             return;
         }
 
-        // リクエストボディは JSON で送られてくるためパラメータではなくボディを読み取る
+        // React側からJSONで送られるため、通常のrequest parameterではなくbodyを読む。
         JsonNode body;
         try {
             body = OBJECT_MAPPER.readTree(request.getReader());
@@ -41,6 +50,7 @@ public class LikeMutter extends HttpServlet {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "JSONの形式が不正です");
             return;
         }
+
         Integer mutterId = null;
         if (body != null && body.has("mutterId")) {
             JsonNode idNode = body.get("mutterId");
@@ -52,11 +62,10 @@ public class LikeMutter extends HttpServlet {
             return;
         }
 
-        // 自分の投稿にはいいねできないようにする。
-        // ここで投稿者を確認してから、全体の処理へ進める。
-        Mutter target = new MutterDAO().findById(mutterId);
+        // 自分の投稿にいいねできない既存仕様を、Service更新前にServlet側で明示的に守る。
+        Mutter target = ApplicationServiceBridge.mutters().findById(mutterId);
         if (target == null) {
-            response.sendError(HttpServletResponse.SC_NOT_FOUND, "指定されたつぶやきは存在しません");
+            response.sendError(HttpServletResponse.SC_NOT_FOUND, "指定された投稿は存在しません");
             return;
         }
         if (target.getUserId() == loginUser.getId()) {
@@ -73,6 +82,7 @@ public class LikeMutter extends HttpServlet {
         response.getWriter().write("{\"liked\":" + liked + ",\"count\":" + count + "}");
     }
 
+    /** JSON内のmutterIdが文字列で送られた場合にも安全に扱う。 */
     private Integer parsePositiveInteger(String value) {
         if (value == null || value.isBlank()) {
             return null;

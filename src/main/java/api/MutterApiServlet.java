@@ -2,10 +2,11 @@ package api;
 
 import java.io.IOException;
 
+import com.example.dokotsubu.service.ApplicationServiceBridge;
+import com.example.dokotsubu.service.MutterService;
+import com.example.dokotsubu.service.SocialService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
-import dao.MutterDAO;
 import dto.ApiErrorResponse;
 import dto.MutterListResponse;
 import dto.MutterResponse;
@@ -16,18 +17,19 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import model.GetMutterListLogic;
 import model.Mutter;
 import model.MutterFeedPage;
 import model.User;
 import util.ObjectMapperFactory;
 import validation.MutterInputValidator;
 import validation.ValidationResult;
-import dao.LikeDAO;
 
 /**
- * つぶやきを扱う REST API です。
- * 一覧取得・作成・更新・削除の4つの操作を受け付けます。
+ * 投稿（つぶやき）を扱うREST API。
+ *
+ * <p>旧JSP画面からReactへ段階移行するために追加したAPIで、一覧取得、詳細取得、作成、
+ * 更新、削除をJSONで提供する。Phase5では投稿取得や更新の実体を {@link MutterService} /
+ * {@link SocialService} へ委譲し、ServletはHTTPリクエスト/レスポンスの変換に集中させている。</p>
  */
 @WebServlet("/api/mutters/*")
 public class MutterApiServlet extends HttpServlet {
@@ -37,39 +39,46 @@ public class MutterApiServlet extends HttpServlet {
     private static final ObjectMapper OBJECT_MAPPER = ObjectMapperFactory.getObjectMapper();
 
     /**
-     * つぶやきの一覧取得または個別取得を行う。
+     * 投稿一覧または投稿詳細を取得する。
+     *
+     * <p>`/api/mutters` は一覧、`/api/mutters/{id}` は個別投稿として扱う。
+     * 一覧ではReact側の追加読み込みに必要なカーソル情報も返す。</p>
      */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        // 1. ログインしているか確認する。
+        // APIはログインユーザーのいいね/フォロー状態も返すため、最初に認証状態を確認する。
         User loginUser = requireLogin(request, response);
         if (loginUser == null) {
             return;
         }
 
-        // 2. URL に ID が含まれているか確認する。
+        // URLにIDがある場合は個別投稿取得として処理し、不正なパスは明示的なエラーにする。
         boolean individualResource = hasResourceId(request);
         Integer id = parseResourceId(request, response);
         if (individualResource && id == null) {
             return;
         }
+
+        MutterService mutters = ApplicationServiceBridge.mutters();
+        SocialService social = ApplicationServiceBridge.social();
+
         if (id != null) {
-            // 3. 個別のつぶやきを取得して JSON で返す。
-            Mutter mutter = new MutterDAO().findById(id);
+            // 詳細レスポンスには、投稿本体に加えて表示用のソーシャル状態を含める。
+            Mutter mutter = mutters.findById(id);
             if (mutter == null) {
                 writeError(response, HttpServletResponse.SC_NOT_FOUND,
-                        "MUTTER_NOT_FOUND", "指定されたつぶやきは存在しません");
+                        "MUTTER_NOT_FOUND", "指定された投稿は存在しません");
                 return;
             }
-            int likeCount = new LikeDAO().countLikes(id);
-            boolean likedByMe = new LikeDAO().hasLiked(id, loginUser.getId());
-            boolean followedByMe = new dao.FollowDAO().isFollowing(loginUser.getId(), mutter.getUserId());
+            int likeCount = social.countLikes(id);
+            boolean likedByMe = social.hasLiked(id, loginUser.getId());
+            boolean followedByMe = social.isFollowing(loginUser.getId(), mutter.getUserId());
             writeJson(response, HttpServletResponse.SC_OK, MutterResponse.from(mutter, likeCount, likedByMe, followedByMe));
             return;
         }
 
-        // 4. 一覧検索用の条件を読み取り、つぶやき一覧を返す。
+        // 一覧取得では、検索キーワード、カーソル、取得件数を検証してからServiceへ渡す。
         ValidationResult keywordResult = MutterInputValidator.validateKeyword(request.getParameter("keyword"));
         if (!keywordResult.valid()) {
             writeError(response, HttpServletResponse.SC_BAD_REQUEST,
@@ -77,12 +86,14 @@ public class MutterApiServlet extends HttpServlet {
             return;
         }
         String keyword = keywordResult.value();
+
         Integer cursor = parseOptionalPositiveInt(request.getParameter("cursor"));
         if (request.getParameter("cursor") != null && cursor == null) {
             writeError(response, HttpServletResponse.SC_BAD_REQUEST,
                     "INVALID_CURSOR", "cursorには正の整数を指定してください");
             return;
         }
+
         Integer requestedLimit = parseOptionalPositiveInt(request.getParameter("limit"));
         if (request.getParameter("limit") != null && requestedLimit == null) {
             writeError(response, HttpServletResponse.SC_BAD_REQUEST,
@@ -90,21 +101,23 @@ public class MutterApiServlet extends HttpServlet {
             return;
         }
         int limit = requestedLimit == null ? DEFAULT_LIMIT : Math.min(requestedLimit, MAX_LIMIT);
-        MutterFeedPage page = new GetMutterListLogic()
-                .executeFeed(keyword, cursor, limit, loginUser.getId());
-        java.util.List<dto.MutterResponse> responseList = page.items().stream()
-                .map(dto.MutterResponse::from)
+
+        MutterFeedPage page = mutters.findFeedPage(keyword, cursor, limit, loginUser.getId());
+        java.util.List<MutterResponse> responseList = page.items().stream()
+                .map(MutterResponse::from)
                 .toList();
         writeJson(response, HttpServletResponse.SC_OK, MutterListResponse.from(responseList, page));
     }
 
     /**
-     * 新しいつぶやきを作成する。
+     * 新しい投稿を作成する。
+     *
+     * <p>入力検証はServletで行い、永続化はServiceへ委譲する。作成後はReact側が即座に
+     * 画面へ反映できるよう、作成済み投稿をJSONで返す。</p>
      */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        // 1. ログインしているか確認する。
         User loginUser = requireLogin(request, response);
         if (loginUser == null) {
             return;
@@ -115,33 +128,33 @@ public class MutterApiServlet extends HttpServlet {
             return;
         }
 
-        // 2. リクエストボディから投稿内容を読み取る。
         MutterWriteRequest body = readBody(request, response);
         if (body == null) return;
         ValidationResult textResult = validateText(body.text(), response);
         if (!textResult.valid()) return;
 
-        // 3. データベースに保存し、作成結果を返す。
-        Mutter created = new MutterDAO().createAndReturn(
+        Mutter created = ApplicationServiceBridge.mutters().createAndReturn(
                 new Mutter(loginUser.getId(), textResult.value()));
         if (created == null) {
             writeError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-                    "CREATE_FAILED", "つぶやきの作成に失敗しました");
+                    "CREATE_FAILED", "投稿の作成に失敗しました");
             return;
         }
 
         response.setHeader("Location", request.getContextPath() + "/api/mutters/" + created.getId());
-        // 新規作成直後はいいね・フォローはないため false を返す
+        // 新規作成直後は、いいね/フォロー状態がまだ付かないためfalse/0で返す。
         writeJson(response, HttpServletResponse.SC_CREATED, MutterResponse.from(created, 0, false, false));
     }
 
     /**
-     * 既存のつぶやきを更新する。
+     * 既存投稿を更新する。
+     *
+     * <p>投稿者本人のみ更新可能。versionを使った楽観ロックにより、別タブや別端末で
+     * 先に更新された投稿を上書きしないようにする。</p>
      */
     @Override
     protected void doPut(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        // 1. ログインしているか確認する。
         User loginUser = requireLogin(request, response);
         if (loginUser == null) {
             return;
@@ -151,7 +164,6 @@ public class MutterApiServlet extends HttpServlet {
             return;
         }
 
-        // 2. 更新内容を読み取り、入力内容を確認する。
         MutterWriteRequest body = readBody(request, response);
         if (body == null) return;
         ValidationResult textResult = validateText(body.text(), response);
@@ -162,42 +174,47 @@ public class MutterApiServlet extends HttpServlet {
             return;
         }
 
-        // 3. 対象つぶやきが存在し、自分のものか確認する。
-        Mutter current = new MutterDAO().findById(id);
+        MutterService mutters = ApplicationServiceBridge.mutters();
+        SocialService social = ApplicationServiceBridge.social();
+
+        // 更新前に存在確認と所有者確認を行い、Repository側の更新条件を分かりやすく保つ。
+        Mutter current = mutters.findById(id);
         if (current == null) {
             writeError(response, HttpServletResponse.SC_NOT_FOUND,
-                    "MUTTER_NOT_FOUND", "指定されたつぶやきは存在しません");
+                    "MUTTER_NOT_FOUND", "指定された投稿は存在しません");
             return;
         }
         if (current.getUserId() != loginUser.getId()) {
             writeError(response, HttpServletResponse.SC_FORBIDDEN,
-                    "FORBIDDEN", "他のユーザーのつぶやきは更新できません");
+                    "FORBIDDEN", "他のユーザーの投稿は更新できません");
             return;
         }
 
-        // 4. 更新を実行して結果を返す。
         Mutter updated = new Mutter(id, loginUser.getId(), loginUser.getName(),
                 textResult.value(), body.version());
-        if (!new MutterDAO().update(updated)) {
+        if (!mutters.update(updated)) {
             writeError(response, HttpServletResponse.SC_CONFLICT,
                     "UPDATE_CONFLICT", "他の操作で更新されています。最新データを取得してください");
             return;
         }
-        Mutter refreshed = new MutterDAO().findById(id);
-        int likeCount = new LikeDAO().countLikes(id);
-        boolean likedByMe = new LikeDAO().hasLiked(id, loginUser.getId());
-        boolean followedByMe = new dao.FollowDAO().isFollowing(loginUser.getId(), refreshed.getUserId());
+
+        // 更新後のversionを含む最新状態を返すため、再取得してからレスポンスを組み立てる。
+        Mutter refreshed = mutters.findById(id);
+        int likeCount = social.countLikes(id);
+        boolean likedByMe = social.hasLiked(id, loginUser.getId());
+        boolean followedByMe = social.isFollowing(loginUser.getId(), refreshed.getUserId());
         writeJson(response, HttpServletResponse.SC_OK,
             MutterResponse.from(refreshed, likeCount, likedByMe, followedByMe));
     }
 
     /**
-     * つぶやきを削除する。
+     * 既存投稿を削除する。
+     *
+     * <p>更新と同じく投稿者本人のみ削除可能。成功時はREST APIの慣例に合わせて204を返す。</p>
      */
     @Override
     protected void doDelete(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        // 1. ログインしているか確認する。
         User loginUser = requireLogin(request, response);
         if (loginUser == null) {
             return;
@@ -207,28 +224,28 @@ public class MutterApiServlet extends HttpServlet {
             return;
         }
 
-        // 2. 対象つぶやきが存在し、自分のものか確認する。
-        Mutter current = new MutterDAO().findById(id);
+        MutterService mutters = ApplicationServiceBridge.mutters();
+        Mutter current = mutters.findById(id);
         if (current == null) {
             writeError(response, HttpServletResponse.SC_NOT_FOUND,
-                    "MUTTER_NOT_FOUND", "指定されたつぶやきは存在しません");
+                    "MUTTER_NOT_FOUND", "指定された投稿は存在しません");
             return;
         }
         if (current.getUserId() != loginUser.getId()) {
             writeError(response, HttpServletResponse.SC_FORBIDDEN,
-                    "FORBIDDEN", "他のユーザーのつぶやきは削除できません");
+                    "FORBIDDEN", "他のユーザーの投稿は削除できません");
             return;
         }
 
-        // 3. 削除を実行する。
-        if (!new MutterDAO().delete(id, loginUser.getId())) {
+        if (!mutters.delete(id, loginUser.getId())) {
             writeError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-                    "DELETE_FAILED", "つぶやきの削除に失敗しました");
+                    "DELETE_FAILED", "投稿の削除に失敗しました");
             return;
         }
         response.setStatus(HttpServletResponse.SC_NO_CONTENT);
     }
 
+    /** API共通のログイン確認。未ログインならJSONエラーを返す。 */
     private User requireLogin(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
         HttpSession session = request.getSession(false);
@@ -240,6 +257,7 @@ public class MutterApiServlet extends HttpServlet {
         return loginUser;
     }
 
+    /** JSONリクエストボディをDTOへ変換し、壊れたJSONは400で返す。 */
     private MutterWriteRequest readBody(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
         try {
@@ -251,6 +269,7 @@ public class MutterApiServlet extends HttpServlet {
         }
     }
 
+    /** 投稿本文の入力検証を共通化し、エラー時はAPI形式で返す。 */
     private ValidationResult validateText(String text, HttpServletResponse response)
             throws IOException {
         ValidationResult result = MutterInputValidator.validateText(text);
@@ -261,6 +280,7 @@ public class MutterApiServlet extends HttpServlet {
         return result;
     }
 
+    /** `/api/mutters/{id}` のID部分を解析する。 */
     private Integer parseResourceId(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
         String path = request.getPathInfo();
@@ -285,21 +305,24 @@ public class MutterApiServlet extends HttpServlet {
         }
     }
 
+    /** 更新/削除のようにID必須のAPIで、ID未指定を分かりやすく400にする。 */
     private Integer requireResourceId(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
         if (!hasResourceId(request)) {
             writeError(response, HttpServletResponse.SC_BAD_REQUEST,
-                    "ID_REQUIRED", "URLに対象のつぶやきIDを指定してください");
+                    "ID_REQUIRED", "URLに対象の投稿IDを指定してください");
             return null;
         }
         return parseResourceId(request, response);
     }
 
+    /** パスに投稿IDらしき要素があるかを判定する。 */
     private boolean hasResourceId(HttpServletRequest request) {
         String path = request.getPathInfo();
         return path != null && !path.equals("/") && !path.isBlank();
     }
 
+    /** cursor/limitのような任意の正整数パラメータを安全に読む。 */
     private Integer parseOptionalPositiveInt(String value) {
         if (value == null || value.isBlank()) {
             return null;
@@ -312,6 +335,7 @@ public class MutterApiServlet extends HttpServlet {
         }
     }
 
+    /** APIレスポンスをJSONとして書き込む共通処理。 */
     private void writeJson(HttpServletResponse response, int status, Object body)
             throws IOException {
         response.setStatus(status);
@@ -320,6 +344,7 @@ public class MutterApiServlet extends HttpServlet {
         OBJECT_MAPPER.writeValue(response.getWriter(), body);
     }
 
+    /** エラー時もフロントエンドが扱いやすい共通JSON形式で返す。 */
     private void writeError(HttpServletResponse response, int status, String code, String message)
             throws IOException {
         writeJson(response, status, new ApiErrorResponse(status, code, message));

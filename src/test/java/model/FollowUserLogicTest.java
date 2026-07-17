@@ -1,31 +1,32 @@
 package model;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.example.dokotsubu.service.SocialService;
 import org.junit.jupiter.api.Test;
-import org.mockito.MockedConstruction;
-import org.mockito.Mockito;
 
-import dao.FollowDAO;
-
+/**
+ * FollowUserLogicがSocialServiceへの薄い委譲層として動くことを確認するテスト。
+ *
+ * <p>Phase5で実処理をServiceへ移したため、ここではDBを使わずServiceをモックして
+ * 旧Logicの戻り値仕様が維持されているかを検証する。</p>
+ */
 class FollowUserLogicTest {
 
     @Test
     void executeReturnsActualFollowingStateAfterToggle() {
-        try (MockedConstruction<FollowDAO> mocked = Mockito.mockConstruction(FollowDAO.class, (mock, context) -> {
-            when(mock.toggleFollow(1, 2)).thenReturn(true);
-            when(mock.isFollowing(1, 2)).thenReturn(false);
-        })) {
-            FollowUserLogic logic = new FollowUserLogic();
+        // toggle後の実状態をそのまま返す仕様を固定する。
+        SocialService social = mock(SocialService.class);
+        when(social.toggleFollow(1, 2)).thenReturn(false);
 
-            boolean following = logic.execute(1, 2);
+        FollowUserLogic logic = new FollowUserLogic(social);
 
-            assertFalse(following);
-            FollowDAO dao = mocked.constructed().get(0);
-            verify(dao).toggleFollow(1, 2);
-            verify(dao).isFollowing(1, 2);
-        }
+        boolean following = logic.execute(1, 2);
+
+        assertFalse(following);
+        verify(social).toggleFollow(1, 2);
     }
 }

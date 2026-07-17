@@ -1,0 +1,116 @@
+package com.example.dokotsubu.service;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import com.example.dokotsubu.persistence.SpringDataJdbcGateway;
+import model.Mutter;
+import model.MutterFeedItem;
+import model.MutterFeedPage;
+import model.MutterPage;
+import org.springframework.stereotype.Service;
+
+/**
+ * 投稿（つぶやき）関連の業務処理をまとめるService。
+ *
+ * <p>Phase5で、一覧取得・検索・投稿作成・更新・削除の入口をこのServiceへ集約した。
+ * Servletや旧LogicからDBアクセスの詳細を隠し、ページングやカーソル制御などの
+ * 投稿固有の判断をここに置くための層である。</p>
+ */
+@Service
+public class MutterService {
+    /** 既存画面とAPIで共通利用する標準取得件数。 */
+    public static final int DEFAULT_LIMIT = 20;
+
+    private final SpringDataJdbcGateway gateway;
+
+    public MutterService(SpringDataJdbcGateway gateway) {
+        this.gateway = gateway;
+    }
+
+    /** 初期表示など、最新投稿を件数指定で取得する。 */
+    public List<Mutter> findLatest(int limit) {
+        return gateway.findLatest(limit);
+    }
+
+    /** 無限スクロール/追加読み込み用に、指定IDより古い投稿を取得する。 */
+    public List<Mutter> findByCursor(int cursor, int limit) {
+        return gateway.findByCursor(cursor, limit);
+    }
+
+    /** JSP互換の投稿一覧用に、検索条件とカーソルからページ情報を作る。 */
+    public MutterPage findPage(String keyword, Integer cursor, int limit) {
+        List<Mutter> fetched = gateway.findMutterPage(keyword, cursor, limit + 1);
+        return toMutterPage(fetched, limit);
+    }
+
+    /**
+     * React/API向けに、投稿本体に加えていいね数やフォロー状態を含むFeedを取得する。
+     * limit + 1件取得して、次ページがあるかをService側で判定する。
+     */
+    public MutterFeedPage findFeedPage(String keyword, Integer cursor, int limit, int viewerId) {
+        List<MutterFeedItem> fetched = gateway.findFeedPage(keyword, cursor, limit + 1, viewerId);
+        boolean hasNext = fetched.size() > limit;
+        List<MutterFeedItem> items = new ArrayList<>(
+                fetched.subList(0, Math.min(limit, fetched.size())));
+        Integer nextCursor = hasNext && !items.isEmpty()
+                ? items.get(items.size() - 1).mutter().getId() : null;
+        return new MutterFeedPage(items, nextCursor, hasNext);
+    }
+
+    /** 旧メイン画面のタイムライン取得を、Service経由のページング処理へ置き換える。 */
+    public MutterPage findTimelinePage(Integer cursor, int limit) {
+        List<Mutter> fetched = cursor == null
+                ? gateway.findLatest(limit + 1)
+                : gateway.findByCursor(cursor, limit + 1);
+        if (fetched == null) {
+            fetched = new ArrayList<>();
+        }
+        return toMutterPage(fetched, limit);
+    }
+
+    /** 旧GetMutterListLogicの引数なし呼び出し互換用。 */
+    public List<Mutter> findAll() {
+        return findTimelinePage(null, DEFAULT_LIMIT).getMutters();
+    }
+
+    /** 投稿詳細、更新、削除の事前確認で使うID検索。 */
+    public Mutter findById(int mutterId) {
+        return gateway.findMutterById(mutterId);
+    }
+
+    /** APIでは作成後のIDや表示用情報が必要なため、作成した投稿を返す。 */
+    public Mutter createAndReturn(Mutter mutter) {
+        return gateway.createMutter(mutter);
+    }
+
+    /** 旧PostMutterLogicのboolean戻り値に合わせた互換メソッド。 */
+    public boolean create(Mutter mutter) {
+        return createAndReturn(mutter) != null;
+    }
+
+    /** 楽観ロック用のversionを含む投稿更新をRepositoryへ委譲する。 */
+    public boolean update(Mutter mutter) {
+        return gateway.updateMutter(mutter);
+    }
+
+    /** 投稿者本人だけが削除できるよう、userIdもRepositoryへ渡す。 */
+    public boolean delete(int mutterId, int userId) {
+        return gateway.deleteMutter(mutterId, userId);
+    }
+
+    /** 旧検索画面の互換用にキーワード検索をServiceへ集約する。 */
+    public List<Mutter> search(String keyword) {
+        return gateway.searchMutters(keyword);
+    }
+
+    /** limit + 1件取得した結果から、画面/APIに返すページ情報へ整形する。 */
+    private MutterPage toMutterPage(List<Mutter> fetched, int limit) {
+        boolean hasNext = fetched.size() > limit;
+        List<Mutter> mutters = new ArrayList<>(
+                fetched.subList(0, Math.min(limit, fetched.size())));
+        Integer nextCursor = hasNext && !mutters.isEmpty()
+                ? mutters.get(mutters.size() - 1).getId() : null;
+        return new MutterPage(mutters, nextCursor, hasNext);
+    }
+}

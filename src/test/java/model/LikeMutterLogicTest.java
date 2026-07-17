@@ -1,31 +1,32 @@
 package model;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.example.dokotsubu.service.SocialService;
 import org.junit.jupiter.api.Test;
-import org.mockito.MockedConstruction;
-import org.mockito.Mockito;
 
-import dao.LikeDAO;
-
+/**
+ * LikeMutterLogicがSocialServiceへの薄い委譲層として動くことを確認するテスト。
+ *
+ * <p>Phase5で実処理をServiceへ移したため、ここではDBを使わずServiceをモックして
+ * 旧Logicの戻り値仕様が維持されているかを検証する。</p>
+ */
 class LikeMutterLogicTest {
 
     @Test
     void executeReturnsActualLikedStateAfterToggle() {
-        try (MockedConstruction<LikeDAO> mocked = Mockito.mockConstruction(LikeDAO.class, (mock, context) -> {
-            when(mock.toggleLike(1, 2)).thenReturn(true);
-            when(mock.hasLiked(1, 2)).thenReturn(false);
-        })) {
-            LikeMutterLogic logic = new LikeMutterLogic();
+        // toggle後の実状態をそのまま返す仕様を固定する。
+        SocialService social = mock(SocialService.class);
+        when(social.toggleLike(1, 2)).thenReturn(false);
 
-            boolean liked = logic.execute(1, 2);
+        LikeMutterLogic logic = new LikeMutterLogic(social);
 
-            assertFalse(liked);
-            LikeDAO dao = mocked.constructed().get(0);
-            verify(dao).toggleLike(1, 2);
-            verify(dao).hasLiked(1, 2);
-        }
+        boolean liked = logic.execute(1, 2);
+
+        assertFalse(liked);
+        verify(social).toggleLike(1, 2);
     }
 }

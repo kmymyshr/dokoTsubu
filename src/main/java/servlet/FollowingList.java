@@ -3,7 +3,7 @@ package servlet;
 import java.io.IOException;
 import java.util.stream.Collectors;
 
-import dao.UserDAO;
+import com.example.dokotsubu.service.ApplicationServiceBridge;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -14,10 +14,17 @@ import jakarta.servlet.http.HttpSession;
 import model.FollowUserLogic;
 import model.User;
 
+/**
+ * JSP版フォロー中一覧画面を表示するServlet。
+ *
+ * <p>Phase5では対象ユーザーの取得をUserService経由に寄せた。画面が期待する属性名は維持し、
+ * フォロー関係の取得はFollowUserLogic経由でSocialServiceへ委譲する。</p>
+ */
 @WebServlet("/FollowingList")
 public class FollowingList extends HttpServlet {
     private static final long serialVersionUID = 1L;
 
+    /** フォロー中ユーザー一覧と、ログインユーザーから見たフォロー状態をJSPへ渡す。 */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -34,7 +41,7 @@ public class FollowingList extends HttpServlet {
             return;
         }
 
-        User targetUser = new UserDAO().findById(userId);
+        User targetUser = ApplicationServiceBridge.users().findById(userId);
         if (targetUser == null) {
             response.sendError(HttpServletResponse.SC_NOT_FOUND, "指定されたユーザーは存在しません");
             return;
@@ -55,6 +62,7 @@ public class FollowingList extends HttpServlet {
         dispatcher.forward(request, response);
     }
 
+    /** URLパラメータのIDを正の整数として安全に読む。 */
     private Integer parsePositiveInteger(String value) {
         if (value == null || value.isBlank()) {
             return null;

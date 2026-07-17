@@ -3,7 +3,7 @@ package servlet;
 import java.io.IOException;
 import java.util.stream.Collectors;
 
-import dao.UserDAO;
+import com.example.dokotsubu.service.ApplicationServiceBridge;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -14,10 +14,17 @@ import jakarta.servlet.http.HttpSession;
 import model.FollowUserLogic;
 import model.User;
 
+/**
+ * JSP版フォロワー一覧画面を表示するServlet。
+ *
+ * <p>Phase5では対象ユーザーの取得をUserService経由に寄せた。フォロー関係の取得は、
+ * 既存JSPとの互換を保つため、移行用のFollowUserLogicを経由してSocialServiceへ委譲している。</p>
+ */
 @WebServlet("/FollowerList")
 public class FollowerList extends HttpServlet {
     private static final long serialVersionUID = 1L;
 
+    /** フォロワー一覧と、ログインユーザーから見たフォロー状態をJSPへ渡す。 */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -34,7 +41,7 @@ public class FollowerList extends HttpServlet {
             return;
         }
 
-        User targetUser = new UserDAO().findById(userId);
+        User targetUser = ApplicationServiceBridge.users().findById(userId);
         if (targetUser == null) {
             response.sendError(HttpServletResponse.SC_NOT_FOUND, "指定されたユーザーは存在しません");
             return;
@@ -54,6 +61,7 @@ public class FollowerList extends HttpServlet {
         dispatcher.forward(request, response);
     }
 
+    /** URLパラメータのIDを正の整数として安全に読む。 */
     private Integer parsePositiveInteger(String value) {
         if (value == null || value.isBlank()) {
             return null;

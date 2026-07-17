@@ -1,23 +1,29 @@
-//ユーザ情報をデータベースに登録する。そういう処理で使う。
-//Bcrypt予定
-
 package model;
 
-//bcrypt
+import com.example.dokotsubu.service.ApplicationServiceBridge;
+import com.example.dokotsubu.service.UserService;
 
-import org.mindrot.jbcrypt.BCrypt;
-
-import dao.UserDAO;
-
+/**
+ * ユーザー登録の旧Logic互換クラス。
+ *
+ * <p>Phase5で登録時のパスワードハッシュ化と永続化を {@link UserService} へ移した。
+ * このクラスは既存の呼び出し口を維持するための薄い委譲層である。</p>
+ */
 public class RegisterUserLogic {
+    private final UserService users;
 
-	public boolean execute(User user) {
+    /** 既存コード向け。Spring管理Serviceは移行用ブリッジから取得する。 */
+    public RegisterUserLogic() {
+        this(ApplicationServiceBridge.users());
+    }
 
-		String hashedPass = BCrypt.hashpw(user.getPass(), BCrypt.gensalt(12));
+    /** テストではUserServiceを差し替えられるようにする。 */
+    public RegisterUserLogic(UserService users) {
+        this.users = users;
+    }
 
-		User hashedUser = new User(user.getName(), hashedPass);
-
-		UserDAO dao = new UserDAO();
-		return dao.create(hashedUser);
-	}
+    /** Service側でパスワードをハッシュ化してから登録する。 */
+    public boolean execute(User user) {
+        return users.register(user);
+    }
 }
