@@ -1,5 +1,7 @@
 # dokoTsubu
 
+[![CI](https://github.com/kmymyshr/dokoTsubu/actions/workflows/ci.yml/badge.svg)](https://github.com/kmymyshr/dokoTsubu/actions/workflows/ci.yml)
+
 Java Servlet / JSP をベースに開発し、**React + REST API**
 へ段階的に移行しているミニSNSアプリです。
 
@@ -29,6 +31,24 @@ Java Servlet / JSP をベースに開発し、**React + REST API**
   Container   Docker / Tomcat 11
   Deploy      Render
   Test        JUnit5 / Mockito / Vitest
+
+------------------------------------------------------------------------
+
+# CI
+
+GitHub Actionsで、`main`ブランチへのpushと`main`ブランチ向けのPull
+Requestを対象に、以下を自動実行します。
+
+- Java・Reactのテスト
+- Viteの本番ビルド
+- WARファイルの生成と成果物保存
+- Dockerイメージのビルド確認
+
+ローカルでは次のコマンドで、テストからWAR生成までを確認できます。
+
+``` shell
+mvn --batch-mode --no-transfer-progress clean verify
+```
 
 ------------------------------------------------------------------------
 
