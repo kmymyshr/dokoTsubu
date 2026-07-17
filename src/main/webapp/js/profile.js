@@ -1,4 +1,10 @@
 (function () {
+  /**
+   * プロフィール画面のフォロー切り替え用スクリプト。
+   *
+   * Phase7ではプロフィール画面自体はまだJSPだが、フォロー操作は画面遷移なしで行う。
+   * 将来React化するときに同じAPIへ置き換えやすいよう、DOM操作の範囲をこのファイルに閉じ込める。
+   */
   const root = document.getElementById("profileFollow");
   if (!root) return;
 
@@ -12,7 +18,7 @@
   let followed = root.dataset.following === "true";
 
   function updateButton() {
-    button.textContent = followed ? "フォロー済" : "フォロー";
+    button.textContent = followed ? "フォロー中" : "フォロー";
   }
 
   async function handleFollowClick() {
@@ -41,7 +47,7 @@
           const error = await response.json();
           errorMessage = error.message || errorMessage;
         } catch (_) {
-          // ignore
+          // HTMLエラーなどJSON以外が返った場合は、共通メッセージを使う。
         }
         throw new Error(errorMessage);
       }
@@ -51,7 +57,7 @@
       root.dataset.following = String(followed);
       updateButton();
       if (followersCount) {
-        followersCount.textContent = `フォロワー: ${Number(result.followers)}`;
+        followersCount.textContent = String(Number(result.followers));
       }
       message.textContent = followed ? "フォローしました" : "フォローを解除しました";
     } catch (error) {

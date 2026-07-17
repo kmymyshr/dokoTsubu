@@ -1,6 +1,10 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <!DOCTYPE html>
+<%--
+  Phase7では、プロフィール画面をReact化しやすい構成へ近づけるため、
+  JSPは表示と最小限のフォームだけを担当する。フォロー切り替えは既存の非同期JSで処理する。
+--%>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
@@ -15,14 +19,14 @@
         <p><a href="${pageContext.request.contextPath}/Main">Mainへ戻る</a></p>
 
         <section class="profile-card">
-            <h1>${profileUser.name}</h1>
+            <h1><c:out value="${profileUser.name}" /></h1>
             <p>ユーザーID: ${profileUser.id}</p>
 
             <div style="display: flex; gap: 16px; flex-wrap: wrap; margin: 16px 0;">
-                <p id="followersCount">
+                <p>
                     フォロワー:
                     <a href="${pageContext.request.contextPath}/FollowerList?userId=${profileUser.id}">
-                        ${followers}
+                        <span id="followersCount">${followers}</span>
                     </a>
                 </p>
                 <p>
@@ -49,10 +53,10 @@
             </section>
 
             <c:if test="${param.updated eq '1'}">
-                <p role="status">自己紹介を更新しました。</p>
+                <p class="message" role="status">自己紹介を更新しました。</p>
             </c:if>
             <c:if test="${not empty errorMsg}">
-                <p role="alert"><c:out value="${errorMsg}" /></p>
+                <p class="message error" role="alert"><c:out value="${errorMsg}" /></p>
             </c:if>
 
             <c:if test="${ownProfile}">
@@ -75,7 +79,7 @@
                      data-following="${following}">
                     <button id="followButton" type="button">
                         <c:choose>
-                            <c:when test="${following}">フォロー済</c:when>
+                            <c:when test="${following}">フォロー中</c:when>
                             <c:otherwise>フォロー</c:otherwise>
                         </c:choose>
                     </button>

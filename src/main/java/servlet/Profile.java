@@ -15,17 +15,23 @@ import model.FollowUserLogic;
 import model.User;
 
 /**
- * JSP版プロフィール画面を表示・更新するServlet。
+ * プロフィール画面を表示・更新するServlet。
  *
- * <p>React移行前のJSP画面を残しつつ、Phase5でユーザー取得と自己紹介更新を
- * {@link UserService} 経由に変更した。画面遷移やrequest属性名は既存JSPに合わせて維持している。</p>
+ * <p>Phase7では、プロフィール画面を今後Reactへ置き換えやすくするために、Servletの責務を
+ * 「認証確認」「表示用データの準備」「自己紹介更新」に整理している。DBアクセスはService層へ委譲し、
+ * JSPは受け取った属性を表示するだけに近づける。</p>
  */
 @WebServlet("/Profile")
 public class Profile extends HttpServlet {
     private static final long serialVersionUID = 1L;
     private static final int MAX_BIO_LENGTH = 160;
 
-    /** プロフィール画面を表示する。本人/他人の違いやフォロー状態もJSP用属性に詰める。 */
+    /**
+     * プロフィール画面を表示する。
+     *
+     * <p>本人プロフィールでは自己紹介編集フォームを表示し、他ユーザーのプロフィールでは
+     * フォローボタン用の状態を渡す。</p>
+     */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -57,7 +63,8 @@ public class Profile extends HttpServlet {
     /**
      * 自己紹介を更新する。
      *
-     * <p>本人以外のプロフィール更新を防ぐため、URLパラメータのuserIdとセッションユーザーIDを照合する。</p>
+     * <p>本人以外のプロフィール更新を防ぐため、URLパラメータのuserIdとセッションユーザーIDを照合する。
+     * React化後も同じ制約をAPI側に移せるよう、更新ルールをServlet内で明示している。</p>
      */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
@@ -99,13 +106,13 @@ public class Profile extends HttpServlet {
             return;
         }
 
-        // セッション上のloginUserも更新後の内容に差し替え、ヘッダー等の表示と整合させる。
+        // ヘッダー等で参照するセッション上のloginUserも、更新後のユーザー情報に差し替える。
         User refreshedUser = users.findById(userId);
         session.setAttribute("loginUser", refreshedUser);
         response.sendRedirect(request.getContextPath() + "/Profile?userId=" + userId + "&updated=1");
     }
 
-    /** JSPが必要とするプロフィール表示用の属性をまとめて設定する。 */
+    /** JSPが表示に必要とするプロフィール属性をまとめて設定する。 */
     private void prepareProfileAttributes(HttpServletRequest request, User loginUser, User profileUser) {
         boolean ownProfile = loginUser.getId() == profileUser.getId();
         FollowUserLogic logic = new FollowUserLogic();
@@ -130,7 +137,7 @@ public class Profile extends HttpServlet {
         }
     }
 
-    /** 未入力の自己紹介を空文字として扱い、前後の空白は保存しない。 */
+    /** 未入力の自己紹介は空文字として扱い、前後の空白は保存しない。 */
     private String normalizeBio(String bio) {
         return bio == null ? "" : bio.trim();
     }
