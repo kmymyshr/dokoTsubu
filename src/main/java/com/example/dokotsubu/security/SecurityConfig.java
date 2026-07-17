@@ -117,31 +117,30 @@ public class SecurityConfig {
     }
 
     /**
-     * ログイン成功時の既存画面互換処理。
+     * ログイン成功時の処理。
      *
      * <p>旧Servlet/JSPでは `loginUser` をセッションに置く前提で画面が作られているため、
-     * Spring Security認証後も同じ属性を設定して既存JSPへforwardする。</p>
+     * Spring Security認証後も同じ属性を設定する。Phase12ではログイン結果JSPを挟まず、
+     * React化済みのメイン画面へ直接遷移させる。</p>
      */
     private AuthenticationSuccessHandler loginSuccessHandler(UserService users) {
         return (request, response, authentication) -> {
             User loginUser = users.findByName(authentication.getName());
             request.getSession().setAttribute("loginUser", loginUser);
-            request.getRequestDispatcher("/WEB-INF/jsp/loginResult.jsp").forward(request, response);
+            response.sendRedirect(request.getContextPath() + "/Main");
         };
     }
 
-    /** ログイン失敗時は既存JSPの表示仕様に合わせてエラーメッセージをforwardする。 */
+    /** ログイン失敗時はReactログイン画面へ戻し、URLパラメータでエラー表示を切り替える。 */
     private AuthenticationFailureHandler loginFailureHandler() {
-        return (request, response, exception) -> {
-            request.setAttribute("errorMsg", "パスワードが間違っているか、ユーザーが未登録です");
-            request.getRequestDispatcher("/WEB-INF/jsp/loginResult.jsp").forward(request, response);
-        };
+        return (request, response, exception) ->
+                response.sendRedirect(request.getContextPath() + "/index.jsp?error=1");
     }
 
-    /** ログアウト後も既存JSPへ遷移させ、画面側の導線を維持する。 */
+    /** ログアウト後はReactログイン画面へ戻し、完了メッセージを表示できるようにする。 */
     private LogoutSuccessHandler logoutSuccessHandler() {
         return (request, response, authentication) ->
-                request.getRequestDispatcher("/WEB-INF/jsp/logout.jsp").forward(request, response);
+                response.sendRedirect(request.getContextPath() + "/index.jsp?logout=1");
     }
 
     /** 未ログイン時は、APIならJSON、画面ならログイン画面へリダイレクトする。 */

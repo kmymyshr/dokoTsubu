@@ -33,7 +33,7 @@ class DokoTsubuApplicationTest {
     }
 
     @Test
-    void rootRedirectsToLegacyLoginPage() throws Exception {
+    void rootRedirectsToReactHostedLoginPage() throws Exception {
         mockMvc.perform(get("/"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/index.jsp"));

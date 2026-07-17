@@ -10,6 +10,7 @@ import { createMutter, deleteMutter, fetchMutterPage, fetchSession, updateMutter
 import EditDialog from "./components/EditDialog.jsx";
 import FollowList from "./components/FollowList.jsx";
 import Header from "./components/Header.jsx";
+import LoginPage from "./components/LoginPage.jsx";
 import MutterList from "./components/MutterList.jsx";
 import PostForm from "./components/PostForm.jsx";
 import ProfilePage from "./components/ProfilePage.jsx";
@@ -30,6 +31,10 @@ export default function App() {
   const pageKind = document.body.dataset.reactPage || "main";
   const followListType = document.body.dataset.followListType || "followers";
   const targetUserId = Number(document.body.dataset.targetUserId || "0");
+  const csrfToken = document.body.dataset.csrfToken || "";
+  const csrfParam = document.body.dataset.csrfParam || "_csrf";
+  const loginError = document.body.dataset.loginError === "true";
+  const loggedOut = document.body.dataset.loggedOut === "true";
   const [user, setUser] = useState(null);
   const [mutters, setMutters] = useState([]);
   const [followStateByUserId, setFollowStateByUserId] = useState({});
@@ -96,7 +101,7 @@ export default function App() {
   useEffect(() => {
     let active = true;
     async function initialize() {
-      if (pageKind === "register") {
+      if (pageKind === "register" || pageKind === "login") {
         setLoading(false);
         return;
       }
@@ -157,6 +162,18 @@ export default function App() {
 
   if (pageKind === "register") {
     return <RegisterPage contextPath={contextPath} />;
+  }
+
+  if (pageKind === "login") {
+    return (
+      <LoginPage
+        contextPath={contextPath}
+        csrfToken={csrfToken}
+        csrfParam={csrfParam}
+        loginError={loginError}
+        loggedOut={loggedOut}
+      />
+    );
   }
 
   if (pageKind === "profile") {

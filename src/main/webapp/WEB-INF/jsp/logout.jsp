@@ -1,5 +1,11 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8"
     pageEncoding="UTF-8"%>
+<%--
+  旧ログアウト完了画面。
+
+  Phase12で通常のログアウト後導線はReactログイン画面へ戻す形に移したため、
+  このJSPは段階移行中の互換用として残す。
+--%>
 <!DOCTYPE html>
 <html>
 <head>
