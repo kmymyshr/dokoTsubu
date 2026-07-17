@@ -1,6 +1,13 @@
+/**
+ * 投稿一覧と投稿カードを表示するコンポーネント。
+ *
+ * Phase6で旧JSPの投稿一覧表示をReactへ寄せる中心部分。各投稿カードでは、
+ * プロフィールリンク、いいね、フォロー、編集、削除の操作を扱う。
+ */
 import { useState } from "react";
 import { likeMutter, followUser } from "../api";
 
+/** APIの日時文字列を日本時間の表示文字列に変換する。 */
 function formatDate(value) {
   const valueWithTimezone = value && !/[zZ]|[+-]\d{2}:\d{2}$/.test(value)
     ? `${value}Z`
@@ -24,6 +31,7 @@ function MutterCard({
   const [likeCount, setLikeCount] = useState(mutter.likeCount ?? 0);
   const [liked, setLiked] = useState(mutter.likedByMe ?? false);
 
+  /** いいね切り替え後、カード内の件数と状態だけを即時更新する。 */
   async function handleLike() {
     try {
       const res = await likeMutter(mutter.id);
@@ -34,18 +42,20 @@ function MutterCard({
     }
   }
 
+  /** フォロー切り替え後、同じ投稿者のカードにも反映できるよう親へ状態を通知する。 */
   async function handleFollow() {
     if (!user) return;
     try {
       const res = await followUser(mutter.userId);
       const nextFollowing = Boolean(res.following);
       onFollowChange?.(mutter.userId, nextFollowing);
-      alert((nextFollowing ? "フォローしました" : "フォローを解除しました") + "（フォロワー: " + res.followers + "）");
+      alert((nextFollowing ? "フォローしました" : "フォローを解除しました") + `（フォロワー: ${res.followers}）`);
     } catch (e) {
       alert(e.message || "フォローに失敗しました");
     }
   }
 
+  /** フォロー解除だけは誤操作を避けるため確認を挟む。 */
   async function handleFollowClick() {
     if (followed && !window.confirm("フォローを解除しますか？")) {
       return;
@@ -67,7 +77,7 @@ function MutterCard({
               title={followed ? "クリックするとフォローを解除します" : "クリックするとフォローします"}
               style={followed ? { backgroundColor: "#dbeafe", color: "#1d4ed8", borderColor: "#60a5fa" } : undefined}
             >
-              {followed ? "フォロー済" : "フォロー"}
+              {followed ? "フォロー中" : "フォロー"}
             </button>
           )}
         </div>

@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import MutterList from "../MutterList.jsx";
 
 describe("MutterList", () => {
-  it("本人の投稿にだけ編集・削除ボタンを表示し、ユーザー単位のフォロー状態を反映する", () => {
+  it("本人の投稿には編集・削除を表示し、他ユーザーにはフォロー状態を表示する", () => {
     const html = renderToStaticMarkup(
       <MutterList
         mutters={[
@@ -51,6 +51,6 @@ describe("MutterList", () => {
     expect(html).toContain("/dokoTsubu/Profile?userId=8");
     expect((html.match(/>編集<\/button>/g) ?? [])).toHaveLength(1);
     expect((html.match(/>削除<\/button>/g) ?? [])).toHaveLength(1);
-    expect((html.match(/>フォロー済<\/button>/g) ?? [])).toHaveLength(2);
+    expect((html.match(/>フォロー中<\/button>/g) ?? [])).toHaveLength(2);
   });
 });

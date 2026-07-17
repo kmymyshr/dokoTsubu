@@ -16,21 +16,23 @@ import validation.MutterInputValidator;
 import validation.ValidationResult;
 
 /**
- * メイン画面の表示と、旧フォーム経由の投稿処理を担当するサーブレットです。
- * 新しい画面では JavaScript から API を使いますが、古い画面との互換も残しています。
+ * ログイン後のメイン画面を表示するServlet。
+ *
+ * <p>Phase6では、投稿一覧・投稿作成・検索・編集・削除の画面操作をReact側へ寄せている。
+ * このServletは認証済みユーザーだけを通し、Reactアプリを読み込むJSPへforwardする
+ * 「画面ホスト」としての役割を持つ。</p>
+ *
+ * <p>POST処理は旧JSPフォーム互換のために残している。React移行が完了した画面操作は
+ * `/api/mutters` を使うが、古いフォームから送信されても動作が壊れないようにしている。</p>
  */
 @WebServlet("/Main")
 public class Main extends HttpServlet {
     private static final long serialVersionUID = 1L;
 
-    /**
-     * メイン画面を表示する。
-     * ログイン済みでなければトップページへ戻す。
-     */
+    /** 認証済みユーザーにReactホストJSPを表示する。 */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        // 1. セッションからログインユーザーを確認する。
         HttpSession session = request.getSession(false);
         User loginUser = session == null ? null : (User) session.getAttribute("loginUser");
         if (loginUser == null) {
@@ -38,22 +40,22 @@ public class Main extends HttpServlet {
             return;
         }
 
-        // 2. メイン画面を表示する。
+        // main.jspはJSPでHTMLを作り込まず、Reactのroot要素とバンドルを読み込むだけにする。
         RequestDispatcher dispatcher = request.getRequestDispatcher("/WEB-INF/jsp/main.jsp");
         dispatcher.forward(request, response);
     }
 
     /**
-     * 旧フォームからの投稿処理を行う。
-     * 入力内容を検証し、問題なければつぶやきを保存する。
+     * 旧JSPフォームから投稿された場合の互換処理。
+     *
+     * <p>React画面では投稿作成APIを使うため通常は通らないが、段階移行中に旧導線が残っても
+     * 既存仕様を維持できるようにしている。</p>
      */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        // 1. 文字コードをUTF-8に設定する。
         request.setCharacterEncoding("UTF-8");
 
-        // 2. ログイン済みか確認する。
         HttpSession session = request.getSession(false);
         User loginUser = session == null ? null : (User) session.getAttribute("loginUser");
         if (loginUser == null) {
@@ -61,19 +63,15 @@ public class Main extends HttpServlet {
             return;
         }
 
-        // 3. 投稿本文の入力内容を検証する。
         ValidationResult textResult = MutterInputValidator.validateText(request.getParameter("text"));
         if (textResult.valid()) {
-            // 4. 問題なければ、つぶやき投稿のロジックを呼び出す。
             if (!new PostMutterLogic().execute(new Mutter(loginUser.getId(), textResult.value()))) {
-                session.setAttribute("errorMsg", "つぶやきの投稿に失敗しました");
+                session.setAttribute("errorMsg", "投稿に失敗しました");
             }
         } else {
-            // 5. 不正な入力ならエラーメッセージを設定する。
             session.setAttribute("errorMsg", textResult.message());
         }
 
-        // 6. 処理後にメイン画面へ戻る。
         response.sendRedirect(request.getContextPath() + "/Main");
     }
 }

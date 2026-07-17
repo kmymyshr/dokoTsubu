@@ -1,3 +1,8 @@
+/**
+ * 投稿検索フォーム。
+ *
+ * 旧JSPの検索導線をReact画面内に移し、検索語の変更時にREST APIで一覧を再取得する。
+ */
 import { useState } from "react";
 
 export default function SearchForm({ onSearch, disabled }) {
