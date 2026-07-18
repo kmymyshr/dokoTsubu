@@ -24,6 +24,25 @@ h1, h2, p { margin-top: 0; }
 }
 
 .page-header, .section-heading, .mutter-meta { justify-content: space-between; }
+
+.list-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.refresh-status {
+  min-width: 7.5em;
+  color: #287b35;
+  font-size: 0.9rem;
+  text-align: right;
+  visibility: hidden;
+}
+
+.refresh-status.visible {
+  visibility: visible;
+}
+
 section, .mutter-card {
   margin: 18px 0;
   padding: 16px;
@@ -107,4 +126,7 @@ section, .mutter-card {
 @media (max-width: 560px) {
   .form-row { align-items: stretch; flex-direction: column; }
   .page-header { align-items: flex-start; }
+  .section-heading { align-items: flex-start; }
+  .list-heading-actions { align-items: stretch; flex-direction: column; }
+  .refresh-status { min-width: 0; text-align: left; }
 }
