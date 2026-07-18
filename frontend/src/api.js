@@ -17,7 +17,7 @@ export function configureApi(path) {
  * JSPホストから渡されたCSRFトークンを保持する。
  *
  * ログイン後画面では `/api/session` から取得するが、未ログインで使う登録画面では
- * registerView.jsp のdata属性から受け取ったトークンを使う。
+ * Phase22でControllerが生成するReactホストHTMLのdata属性から受け取ったトークンを使う。
  */
 export function configureCsrfToken(token) {
   csrfToken = token || null;
