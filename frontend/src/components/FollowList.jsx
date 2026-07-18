@@ -90,7 +90,7 @@ export function FollowListView({
           </ul>
         </section>
       </main>
-      <footer><p>dokoTsubu</p></footer>
+      <footer><p>つぶやきアプリ</p></footer>
     </>
   );
 }

@@ -260,7 +260,7 @@ export default function App() {
       </main>
       <EditDialog mutter={editing} saving={loading}
                   onCancel={() => setEditing(null)} onSave={handleUpdate} />
-      <footer><p>dokoTsubu</p></footer>
+      <footer><p>つぶやきアプリ</p></footer>
     </>
   );
 }
