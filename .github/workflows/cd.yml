@@ -1,0 +1,53 @@
+name: CD
+
+# Phase24: mainにマージされた変更をRenderへ反映するためのCDワークフロー。
+#
+# CIはビルド・テスト・Dockerビルドで品質確認を担当し、このCDは「デプロイ開始のトリガー」に責務を絞る。
+# Render側のDockerビルドと起動確認は render.yaml / Dockerfile / /health の設定に沿って実行される。
+on:
+  workflow_run:
+    workflows:
+      - CI
+    types:
+      - completed
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  # 同じmain向けのデプロイ要求が重なった場合、古い要求を止めて最新コミットの反映を優先する。
+  group: cd-${{ github.workflow }}-main
+  cancel-in-progress: true
+
+jobs:
+  deploy-to-render:
+    name: Deploy to Render
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    # workflow_runではCI成功時のみデプロイする。手動実行時は検証済みブランチを人が選ぶ前提で実行可能にする。
+    if: >-
+      ${{
+        github.event_name == 'workflow_dispatch' ||
+        github.event.workflow_run.conclusion == 'success'
+      }}
+
+    steps:
+      - name: Trigger Render deploy hook
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$RENDER_DEPLOY_HOOK_URL" ]; then
+            echo "Repository Secret RENDER_DEPLOY_HOOK_URL is not configured." >&2
+            exit 1
+          fi
+
+          curl --fail --show-error --silent --request POST "$RENDER_DEPLOY_HOOK_URL"
+
+      - name: Explain deployment handoff
+        run: |
+          echo "Render deploy hook was triggered."
+          echo "Check Render Dashboard for build, release, and health check results."
