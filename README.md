@@ -343,3 +343,26 @@ SERVER_FORWARD_HEADERS_STRATEGY=native
 ```text
 https://<service-host>/dokoTsubu/health
 ```
+
+## Phase24 Render向けCDワークフローを追加
+
+Phase24では、GitHub ActionsのCI成功後にRender Deploy Hookを呼び出すCDワークフローを追加しました。
+
+- `.github/workflows/cd.yml` を追加
+- `main` ブランチのCIが成功した場合のみ、Renderのデプロイを起動
+- 手動実行用に `workflow_dispatch` も用意
+- Deploy Hook URLは機密情報のため、GitHub Repository Secret `RENDER_DEPLOY_HOOK_URL` で管理
+- CDワークフロー内にも、なぜCIとCDの責務を分けるかをコメントで明記
+
+### CD利用前にGitHubへ登録するSecret
+
+GitHubの対象リポジトリで、次のRepository Secretを登録します。
+
+```text
+RENDER_DEPLOY_HOOK_URL=<RenderのDeploy Hook URL>
+```
+
+この値はRender Dashboardで対象Web ServiceのDeploy Hookを作成して取得します。
+Secret登録後は、`main` へのマージでCIが成功すると、CDワークフローがRenderへデプロイ開始を通知します。
+
+デプロイ結果はGitHub ActionsではなくRender Dashboard側で確認します。Phase23で追加した `/dokoTsubu/health` がヘルスチェックに使われます。
