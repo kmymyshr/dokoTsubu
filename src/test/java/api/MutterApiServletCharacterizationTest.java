@@ -303,6 +303,39 @@ class MutterApiServletCharacterizationTest {
         assertFalse(json.get("followedByMe").asBoolean());
     }
 
+    @Test
+    void doPost_likeResource_togglesLikeAndReturnsCurrentState() throws Exception {
+        User author = createUser("alice");
+        User viewer = createUser("bob");
+        Mutter mutter = createMutter(author.getId(), "liked post");
+        HttpServletRequest request = mockRequest(viewer);
+        when(request.getPathInfo()).thenReturn("/" + mutter.getId() + "/like");
+        HttpServletResponse response = mock(HttpServletResponse.class);
+        StringWriter body = captureResponseBody(response);
+
+        servlet.doPost(request, response);
+
+        JsonNode json = readJson(body);
+        assertTrue(json.get("liked").asBoolean());
+        assertEquals(1, json.get("count").asInt());
+        assertTrue(likeDAO.hasLiked(mutter.getId(), viewer.getId()));
+    }
+
+    @Test
+    void doPost_likeResource_returns400_whenOwnMutter() throws Exception {
+        User author = createUser("alice");
+        Mutter mutter = createMutter(author.getId(), "own post");
+        HttpServletRequest request = mockRequest(author);
+        when(request.getPathInfo()).thenReturn("/" + mutter.getId() + "/like");
+        HttpServletResponse response = mock(HttpServletResponse.class);
+        StringWriter body = captureResponseBody(response);
+
+        servlet.doPost(request, response);
+
+        verify(response).setStatus(400);
+        assertEquals("CANNOT_LIKE_OWN_MUTTER", readJson(body).get("code").asText());
+    }
+
     // ---------- doPut ----------
 
     @Test

@@ -3,7 +3,7 @@
  *
  * Phase11で旧JSPのプロフィール描画を置き換え、表示データ取得、自己紹介編集、
  * フォロー切り替え後の画面更新をReactへ集約する。バックエンドの業務ルールは
- * `/api/profile` と既存の `/FollowUser` に委譲する。
+ * `/api/profile` とPhase20で追加した `/api/users/{id}/follow` に委譲する。
  */
 import { useEffect, useState } from "react";
 import { fetchProfile, followUser, updateProfileBio } from "../api.js";

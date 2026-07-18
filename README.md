@@ -279,3 +279,14 @@ Phase19では、プロフィール表示・自己紹介更新がReact + `/api/pr
 - `FollowUserLogic` / `LikeMutterLogic` を削除
 - `FollowUser` / `LikeMutter` Servletから `SocialService` を直接呼ぶよう変更
 - 削除したLogicラッパー専用の単体テストを削除
+
+## Phase20 いいね・フォロー操作を正式APIへ移行
+
+Phase20では、React側から呼び出していた旧Servlet名のURL `/LikeMutter` と `/FollowUser` を廃止し、リソース指向のAPIへ移行しました。
+
+- 投稿いいね切り替えを `POST /api/mutters/{id}/like` へ統合
+- フォロー切り替えを `POST /api/users/{id}/follow` として追加
+- ReactのAPIクライアントを新URLへ変更
+- 旧 `LikeMutter` / `FollowUser` Servletを削除
+- Spring SecurityのJSONエラー判定を `/api/` 配下に一本化
+- 新しいフォローAPIの特性テストを追加
