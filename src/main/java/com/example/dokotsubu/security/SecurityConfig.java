@@ -61,7 +61,8 @@ public class SecurityConfig {
         http
                 .authorizeHttpRequests(authorize -> authorize
                         .dispatcherTypeMatchers(DispatcherType.FORWARD, DispatcherType.ERROR).permitAll()
-                        .requestMatchers("/", "/index.jsp", "/Login", "/Register", "/error",
+                        // Phase23: CD/ホスティングサービスの死活監視は未ログインで確認できる必要があるため公開する。
+                        .requestMatchers("/", "/index.jsp", "/Login", "/Register", "/health", "/error",
                                 "/favicon.ico", "/react/**").permitAll()
                         // Phase10で登録処理をReact + JSON APIへ移した。未ログインで使うが、POST時のCSRF保護は維持する。
                         .requestMatchers(HttpMethod.POST, "/api/register").permitAll()

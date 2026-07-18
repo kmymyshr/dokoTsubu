@@ -1,0 +1,26 @@
+# Render Blueprint for dokoTsubu.
+#
+# Phase23で、CD構築前に「どの設定値が本番起動に必要か」を明文化するために追加した。
+# 機密値は sync: false とし、Render Dashboard 側で設定する前提にしている。
+services:
+  - type: web
+    name: dokotsubu
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /dokoTsubu/health
+    envVars:
+      - key: DB_URL
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_MAXIMUM_POOL_SIZE
+        value: "10"
+      - key: FLYWAY_BASELINE_ON_MIGRATE
+        value: "false"
+      - key: SERVER_SERVLET_CONTEXT_PATH
+        value: /dokoTsubu
+      - key: SERVER_FORWARD_HEADERS_STRATEGY
+        value: native
