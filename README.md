@@ -8,7 +8,8 @@ Java Servlet / JSP をベースに開発したミニSNSを、Spring Boot・Sprin
 
 ## デモ
 
-- URL: https://dokotsubu-j38p.onrender.com/dokoTsubu/Main
+- URL: https://dokotsubu-main-staging.onrender.com/dokoTsubu/
+- Health Check: https://dokotsubu-main-staging.onrender.com/dokoTsubu/health
 - テストユーザー:
   - ID: `demo_user1`
   - Password: `demoPass_101!`
@@ -459,7 +460,8 @@ Phase26では、既存 `public` ブランチ環境を練習用として扱い、
 
 ```text
 正式運用対象:
-- Render service: dokoTsubu-main-staging
+- Render service: dokoTsubu-main
+- Public URL: https://dokotsubu-main-staging.onrender.com
 - Branch: main
 - Database: main用に新規作成したSupabase PostgreSQL
 - Deploy: GitHub Actions CD → Render Deploy Hook
@@ -509,23 +511,24 @@ feature branch
 → GitHub Actions CI
 → GitHub Actions CD
 → Render Deploy Hook
-→ dokoTsubu-main-stagingへデプロイ
+→ dokoTsubu-mainへデプロイ
 ```
 
 Render側のAuto-Deployは `Off` とし、GitHub Actions CD経由に一本化します。これにより、GitHub上のCI成功を確認してからRenderデプロイを開始できます。
 
-### 名称変更を行う場合
+### Renderサービス名と公開URL
 
-`dokoTsubu-main-staging` を正式名称へ変える場合は、URL変更の影響を確認してから実施します。
+Renderのサービス表示名は、正式運用対象であることが分かるように `dokoTsubu-main` へ整理済みです。
 
-候補:
+ただし、Renderの既存サブドメインは継続利用するため、公開URLは次のまま運用します。
 
 ```text
-dokoTsubu-main
-dokoTsubu-production
+https://dokotsubu-main-staging.onrender.com
 ```
 
-名称変更またはサービス作り直しを行う場合は、GitHub Repository Secret `RENDER_DEPLOY_HOOK_URL` が新しいRenderサービスのDeploy Hook URLを指していることを確認します。
+サービス名とURLが完全には一致しませんが、既存URLを維持することで、Renderサービスの作り直しや外部導線の再設定を避けます。
+
+将来、独自ドメインや新しいRenderサービスへ切り替える場合は、GitHub Repository Secret `RENDER_DEPLOY_HOOK_URL` が対象サービスのDeploy Hook URLを指していることも確認します。
 
 ## Phase27 自動更新中表示のレイアウト揺れを改善
 

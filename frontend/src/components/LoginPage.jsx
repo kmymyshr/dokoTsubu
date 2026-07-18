@@ -17,7 +17,7 @@ export default function LoginPage({
   return (
     <main>
       <section className="profile-card" aria-labelledby="loginHeading">
-        <h1 id="loginHeading">どこつぶへようこそ!</h1>
+        <h1 id="loginHeading">つぶやきアプリへようこそ!</h1>
 
         {loginError && (
           <p className="message error" role="alert">

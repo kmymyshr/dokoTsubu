@@ -87,7 +87,7 @@ export function ProfileView({
           </section>
         )}
       </main>
-      <footer><p>dokoTsubu</p></footer>
+      <footer><p>つぶやきアプリ</p></footer>
     </>
   );
 }
