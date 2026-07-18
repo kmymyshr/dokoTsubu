@@ -1,8 +1,10 @@
 /**
  * Reactアプリのエントリーポイント。
  *
- * JSPホスト（main.jsp）に置かれた #root へReactをマウントし、bodyのdata属性から
- * contextPathを受け取ってAPIクライアントへ渡す。
+ * Reactアプリのエントリーポイント。
+ *
+ * Phase22でJSPホストを廃止し、Spring MVC Controllerが返す最小HTMLの #root へReactをマウントする。
+ * bodyのdata属性からcontextPathや画面種別を受け取り、APIクライアントと画面切り替えへ渡す。
  */
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";

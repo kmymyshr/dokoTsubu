@@ -1,7 +1,7 @@
 /**
  * ログイン画面を表示するReactコンポーネント。
  *
- * Phase12で旧index.jspのフォーム描画を置き換える。認証処理はSpring Securityの
+ * Phase12で旧index.jspのフォーム描画を置き換え、Phase22でJSPファイル自体も廃止した。認証処理はSpring Securityの
  * `/Login` フォーム認証をそのまま使うため、このコンポーネントは入力フォーム、
  * CSRF hidden項目、失敗/ログアウト後メッセージの表示だけを担当する。
  */
