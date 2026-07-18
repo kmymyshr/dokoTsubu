@@ -14,7 +14,7 @@ describe("LoginPage", () => {
       />
     );
 
-    expect(html).toContain("どこつぶへようこそ!");
+    expect(html).toContain("つぶやきアプリへようこそ!");
     expect(html).toContain('action="/dokoTsubu/Login"');
     expect(html).toContain('name="_csrf"');
     expect(html).toContain('value="csrf-value"');
