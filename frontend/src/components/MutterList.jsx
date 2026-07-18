@@ -110,6 +110,7 @@ export default function MutterList({
   contextPath,
   followStateByUserId,
   onFollowChange,
+  refreshing,
   loading,
   hasNext,
   onRefresh,
@@ -121,7 +122,16 @@ export default function MutterList({
     <section aria-labelledby="listHeading">
       <div className="section-heading">
         <h2 id="listHeading">つぶやき一覧</h2>
-        <button type="button" disabled={loading} onClick={onRefresh}>更新</button>
+        <div className="list-heading-actions">
+          {/*
+           * Phase27: 自動更新中の表示を一覧ヘッダー内に固定し、
+           * 表示/非表示で投稿フォームや一覧全体が上下に動かないようにする。
+           */}
+          <span className={`refresh-status${refreshing ? " visible" : ""}`} role="status">
+            最新確認中...
+          </span>
+          <button type="button" disabled={loading} onClick={onRefresh}>更新</button>
+        </div>
       </div>
       <div aria-live="polite" aria-busy={loading}>
         {mutters.map(mutter => (

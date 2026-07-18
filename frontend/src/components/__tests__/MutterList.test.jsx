@@ -36,6 +36,7 @@ describe("MutterList", () => {
         contextPath="/dokoTsubu"
         followStateByUserId={{ 8: true }}
         onFollowChange={() => {}}
+        refreshing={true}
         loading={false}
         hasNext={false}
         onRefresh={() => {}}
@@ -46,6 +47,7 @@ describe("MutterList", () => {
     );
 
     expect(html).toContain("自分の投稿");
+    expect(html).toContain("最新確認中...");
     expect(html).toContain("他人の投稿 1");
     expect(html).toContain("/dokoTsubu/Profile?userId=7");
     expect(html).toContain("/dokoTsubu/Profile?userId=8");

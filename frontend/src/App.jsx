@@ -245,7 +245,6 @@ export default function App() {
       <Header user={user} contextPath={contextPath} />
       <main>
         {message && <p className={`message${message.error ? " error" : ""}`} role="status">{message.text}</p>}
-        {refreshing && <p className="message" role="status">最新の投稿を確認しています...</p>}
         <PostForm onSubmit={handlePost} disabled={loading || !user} />
         <SearchForm onSearch={handleSearch} disabled={loading || !user} />
         <MutterList mutters={mutters} user={user} contextPath={contextPath}
@@ -253,6 +252,7 @@ export default function App() {
                     onFollowChange={(userId, following) => {
                       setFollowStateByUserId(current => ({ ...current, [userId]: following }));
                     }}
+                    refreshing={refreshing}
                     loading={loading} hasNext={page.hasNext}
                     onRefresh={() => { setOlderPagesLoaded(false); loadPage(); }}
                     onLoadMore={() => loadPage({ append: true })}
