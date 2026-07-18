@@ -1,10 +1,10 @@
-# dokoTsubu
+# つぶやきアプリ（dokoTsubu）
 
 [![CI](https://github.com/kmymyshr/dokoTsubu/actions/workflows/ci.yml/badge.svg)](https://github.com/kmymyshr/dokoTsubu/actions/workflows/ci.yml)
 
-Java Servlet / JSP をベースに開発したミニSNSを、Spring Boot・Spring Security・Flyway・Spring Data JDBC・Service層・React + REST API へ段階的に移行しているアプリケーションです。
+Java Servlet / JSP をベースに作成したミニSNS「dokoTsubu」を、Spring Boot・Spring Security・Flyway・Spring Data JDBC・Service層・React + REST API 構成へ段階的に移行したWebアプリケーションです。
 
-ユーザー登録、ログイン、投稿、検索、編集、削除、いいね、フォローなどの基本機能に加えて、CSRF対策、楽観ロック、PostgreSQL向けスキーマ管理、CIによる検証を整備しています。
+ユーザー登録、ログイン、投稿、検索、編集、削除、いいね、フォローなどの基本的なSNS機能を備えています。現在は、主要画面をReactで表示し、バックエンドはSpring Boot上のREST APIとService層で処理する構成になっています。
 
 ## デモ
 
@@ -14,41 +14,143 @@ Java Servlet / JSP をベースに開発したミニSNSを、Spring Boot・Sprin
   - ID: `demo_user1`
   - Password: `demoPass_101!`
 
+Renderのサービス表示名は `dokoTsubu-main` です。公開URLは、既存のRenderサブドメインを継続利用しているため `dokotsubu-main-staging.onrender.com` のまま運用しています。
+
+## 主な機能
+
+- ユーザー登録
+- ログイン / ログアウト
+- 投稿一覧表示
+- 投稿作成
+- 投稿検索
+- 投稿編集
+- 投稿削除
+- いいね
+- フォロー / フォロー解除
+- フォロー中 / フォロワー一覧
+- プロフィール表示
+- 自己紹介編集
+- 5秒ごとの投稿一覧自動更新
+- CSRF対策
+- 投稿更新時の楽観ロック
+
 ## 使用技術
 
 | 分類 | 技術 |
 | --- | --- |
 | Language | Java 21 |
-| Backend | Spring Boot 3.5 / Spring Security 6.5 / Spring Data JDBC / Jakarta Servlet 6 / JSP |
+| Backend | Spring Boot 3.5 / Spring Security 6.5 / Spring Data JDBC / Jakarta Servlet 6 |
 | Frontend | React 19 / Vite |
 | Database | PostgreSQL / H2 / Flyway |
 | Build | Maven |
 | Container | Docker / Embedded Tomcat 10.1 |
 | Deploy | Render |
+| CI/CD | GitHub Actions / Render Deploy Hook |
 | Test | JUnit 5 / Mockito / Vitest |
 
-## CI
+## 現在の構成
 
-GitHub Actionsで、`main` ブランチへのpushと `main` 向けPull Requestを対象に検証を実行します。
-
-- JavaとReactのテスト
-- Viteの本番ビルド
-- WARファイルの生成と成果物保存
-- Dockerイメージのビルド確認
-
-ローカルでは次のコマンドで、テストからWAR生成まで確認できます。
-
-```shell
-mvn --batch-mode --no-transfer-progress clean verify
+```text
+Browser
+  |
+React
+  |
+REST API / Spring MVC Controller
+  |
+Spring Boot / Spring Security
+  |
+Service
+  |
+Spring Data JDBC Repository / Query Repository
+  |
+PostgreSQL / H2
 ```
+
+画面表示はReact、業務処理はService層、データアクセスはSpring Data JDBC Repository / Query Repositoryへ分離しています。
+
+初期のServlet / JSP構成から段階的に移行した経緯があるため、一部に互換用のServletやブリッジ構成は残っています。ただし、主要な画面表示・認証・API・Service・DBアクセスはSpring Boot中心の構成へ整理済みです。
+
+## ディレクトリ構成
+
+```text
+.
+├── frontend/
+│   └── src/
+│       ├── App.jsx
+│       ├── main.jsx
+│       └── components/
+├── src/
+│   ├── main/
+│   │   ├── java/
+│   │   │   ├── api/
+│   │   │   ├── com/example/dokotsubu/
+│   │   │   │   ├── config/
+│   │   │   │   ├── persistence/
+│   │   │   │   ├── security/
+│   │   │   │   ├── service/
+│   │   │   │   └── web/
+│   │   │   ├── dao/
+│   │   │   ├── dto/
+│   │   │   └── model/
+│   │   └── resources/
+│   │       └── db/migration/
+│   └── test/
+├── Dockerfile
+├── render.yaml
+└── pom.xml
+```
+
+主な役割は次のとおりです。
+
+- `frontend/src/`: React画面、APIクライアント、フロントエンドテスト
+- `src/main/java/api/`: Reactから呼び出すJSON API Servlet
+- `src/main/java/com/example/dokotsubu/web/`: 画面入口とヘルスチェック用Controller
+- `src/main/java/com/example/dokotsubu/security/`: Spring Security設定
+- `src/main/java/com/example/dokotsubu/service/`: ユーザー、投稿、ソーシャル機能のService層
+- `src/main/java/com/example/dokotsubu/persistence/`: Spring Data JDBC Repository、読み取り用Repository、Entity
+- `src/main/resources/db/migration/`: Flywayマイグレーション
 
 ## ローカル実行
 
-Spring Bootの実行可能WARとして起動します。標準設定ではH2 Serverを使用するため、起動後に `http://localhost:8080/dokoTsubu/` へアクセスします。
+標準設定では、ローカルのH2 Serverを使用します。起動後、次のURLへアクセスします。
+
+```text
+http://localhost:8080/dokoTsubu/
+```
+
+アプリケーションを起動します。
 
 ```shell
 mvn spring-boot:run
 ```
+
+ポートを変えて起動したい場合は、環境変数 `PORT` を指定します。
+
+```powershell
+$env:PORT="8081"
+mvn spring-boot:run
+```
+
+H2をインメモリDBとして使う場合は、次のように指定できます。
+
+```powershell
+$env:DB_URL="jdbc:h2:mem:dokotsubu-local;DB_CLOSE_DELAY=-1"
+$env:DB_USER="sa"
+$env:DB_PASSWORD=""
+$env:FLYWAY_BASELINE_ON_MIGRATE="false"
+mvn spring-boot:run
+```
+
+PowerShellで `npm` が実行ポリシーによりブロックされる場合は、`npm.cmd` を使います。
+
+```powershell
+cd frontend
+npm.cmd test -- --run
+npm.cmd run build
+cd ..
+```
+
+## PostgreSQLでの実行
 
 PostgreSQLなど別のデータベースを使用する場合は、環境変数で接続先を指定します。
 
@@ -74,7 +176,9 @@ docker run --rm -p 8080:8080 \
 
 ## データベースマイグレーション
 
-アプリケーション起動時にFlywayが `src/main/resources/db/migration` のマイグレーションを検証・適用します。新規データベースでは `V1__initial_schema.sql` からスキーマを作成し、適用履歴は `flyway_schema_history` テーブルで管理します。
+アプリケーション起動時にFlywayが `src/main/resources/db/migration` のマイグレーションを検証・適用します。
+
+新規データベースでは、`V1__initial_schema.sql` からスキーマを作成します。適用履歴は `flyway_schema_history` テーブルで管理します。
 
 既存のPostgreSQLをFlyway管理へ移す場合は、次の手順で一度だけベースライン化します。
 
@@ -87,120 +191,76 @@ docker run --rm -p 8080:8080 \
 
 既存のマイグレーションファイルは変更せず、今後のスキーマ変更は `V2__...sql`、`V3__...sql` のように新しいファイルとして追加します。
 
-## データアクセスとService層
+## テスト
 
-Phase4で手書きJDBCと共有 `DataSource` ブリッジをSpring Data JDBCへ移行し、Phase5で業務処理の入口をService層へ集約しました。
+Java側とReact側を含めた検証は、Mavenからまとめて実行できます。
 
-- `UserService` がユーザー検索、登録、認証、プロフィール更新を担当
-- `MutterService` が投稿の作成、取得、検索、更新、削除、タイムライン取得を担当
-- `SocialService` がいいね、フォロー、フォロワー/フォロー中一覧を担当
-- 既存のServlet/Logicからは移行用ブリッジ経由でServiceを利用
-- DBアクセスの実体はSpring Data JDBC Repository / Query Repositoryへ集約
-
-この段階では既存画面とAPIの呼び出し形を保ちながら、業務処理とDBアクセスをSpring管理へ寄せています。
-
-## React統合
-
-Phase6では、ログイン後のメイン投稿画面をReactアプリとして正式に扱うよう整理しました。
-
-- `/Main` Servletは認証確認とReactホストJSPへのforwardに責務を縮小
-- `main.jsp` はReactのroot要素とVite成果物を読み込むホストに変更
-- React側で投稿一覧、投稿作成、検索、編集、削除、いいね、フォローを操作
-- `SessionApiServlet` でログインユーザー情報とCSRFトークンをReactへ提供
-- ReactコンポーネントとAPIクライアントの文言・コメントを日本語化
-
-Phase7では、プロフィール画面を今後React化しやすいJSP互換画面として整理しました。
-
-- `Profile` Servletの責務を認証確認、表示用データ準備、自己紹介更新に整理
-- `profile.jsp` の表示文言を日本語化し、JSP側の責務を表示と最小限のフォームに限定
-- 当時のJSP向けフォロー切り替え処理を整理し、後続PhaseのReactコンポーネントへ移しやすい形に変更
-
-Phase8では、フォロー中/フォロワー一覧をReact化するためのAPIと画面整理を追加しました。
-
-- `/api/follows` でフォロー中/フォロワー一覧をJSONとして取得可能
-- `FollowListResponse` / `FollowUserSummaryResponse` で一覧表示用DTOを追加
-- `followerList.jsp` / `followingList.jsp` はJSP互換を維持しつつ、React化時の置き換え箇所が分かるようコメントを追加
-- 既存JSP画面の非同期フォロー操作を、後続PhaseのReact化に向けて一時的に集約
-
-Phase9では、フォロー中/フォロワー一覧の表示をReactへ移しました。
-
-- `FollowList` Reactコンポーネントを追加し、`/api/follows` のレスポンスで一覧を描画
-- `followerList.jsp` / `followingList.jsp` はReactホストへ縮小
-- `FollowerList` / `FollowingList` Servletは認証確認、対象ユーザー確認、Reactホストへのforwardに責務を縮小
-- 旧JSP用の `followList.js` は削除
-
-Phase10では、ユーザー登録画面をReact + REST APIへ移しました。
-
-- `RegisterPage` Reactコンポーネントを追加し、入力・送信・完了表示をReactで担当
-- `/api/register` を追加し、登録処理をJSON APIとして提供
-- `Register` ServletはReactホスト表示に責務を縮小し、旧POST処理は互換用として保持
-- `registerView.jsp` はReactホストへ変更し、CSRFトークンをReactへ渡す
-
-Phase11では、プロフィール画面をReact + REST APIへ移しました。
-
-- `ProfilePage` Reactコンポーネントを追加し、プロフィール表示、自己紹介編集、フォロー切り替えを担当
-- `/api/profile` を追加し、プロフィール表示データ取得と本人の自己紹介更新をJSON APIとして提供
-- `Profile` ServletはReactホスト表示に責務を縮小し、旧POST処理は互換用として保持
-- `profile.jsp` はReactホストへ変更し、対象ユーザーIDとCSRFトークンをReactへ渡す
-
-Phase12では、ログイン画面をReactホストへ移しました。
-
-- `LoginPage` Reactコンポーネントを追加し、ログインフォーム、失敗メッセージ、ログアウト後メッセージを表示
-- `index.jsp` はReactホストへ変更し、CSRFトークンとログイン結果フラグをReactへ渡す
-- 認証処理はSpring Securityの `/Login` フォーム認証を維持
-- ログイン成功時は `Main` へredirectし、失敗/ログアウト後はReactログイン画面へ戻す
-- `loginResult.jsp` / `logout.jsp` はこの時点では互換用として残し、後続Phaseで削除対象にする
-
-Phase13では、React移行後に参照されなくなった旧静的フロント資産を削除しました。
-
-- `src/main/webapp/js/` 配下の旧JSP向けJavaScriptを削除
-- `src/main/webapp/css/main.css` を削除し、Reactビルド成果物のCSSへ一本化
-- Spring Securityの公開静的パスから未使用の `/css/**` と `/js/**` を削除
-
-Phase14では、投稿タイムラインがReact + `/api/mutters` に一本化された後の旧投稿導線を削除しました。
-
-- `/MutterList` / `/SearchMutter` / `/UpdateMutter` / `/DeleteMutter` の旧Servletを削除
-- 旧編集画面 `updateMutter.jsp` を削除
-- 投稿系の旧Logic互換クラスを削除し、投稿操作の入口を `MutterApiServlet` + `MutterService` に集約
-- `MutterService` から旧Servlet専用の一覧/検索互換メソッドを削除
-
-JSPは一部の互換画面や編集画面に残っていますが、投稿タイムライン、フォロー一覧、ユーザー登録、プロフィール、ログインはReact中心の構成へ移行しています。
-
-## 主な機能
-
-- ユーザー登録、ログイン、ログアウト
-- 投稿、検索、編集、削除
-- いいね、フォロー
-- REST API
-- 5秒ごとの自動更新
-- CSRF対策
-- 投稿更新時の楽観ロック
-
-## アーキテクチャ
-
-```text
-Browser
-  |
-React / JSP
-  |
-REST API / Servlet
-  |
-Spring Boot / Spring Security
-  |
-Service
-  |
-Spring Data JDBC Repository / Query Repository
-  |
-PostgreSQL / H2
+```shell
+mvn --batch-mode --no-transfer-progress clean verify
 ```
 
-画面表示、業務処理、データアクセスの責務を分離し、ReactとバックエンドはREST APIを介して通信します。移行中のためJSPとReactが共存していますが、認証・認可、Service、DBアクセスはSpring管理へ集約しています。
+Reactのみ確認する場合は、次のコマンドを使います。
+
+```powershell
+cd frontend
+npm.cmd test -- --run
+npm.cmd run build
+cd ..
+```
+
+CIではGitHub Actionsにより、`main` ブランチへのpushと `main` 向けPull Requestを対象に次の検証を実行します。
+
+- Javaテスト
+- Reactテスト
+- Vite本番ビルド
+- WARファイル生成
+- Dockerイメージビルド確認
+
+## デプロイ
+
+Render上の `dokoTsubu-main` サービスへDockerデプロイしています。
+
+```text
+Render service: dokoTsubu-main
+Branch: main
+Runtime: Docker
+Plan: Starter
+Database: main用Supabase PostgreSQL
+Context path: /dokoTsubu
+Health check: /dokoTsubu/health
+Public URL: https://dokotsubu-main-staging.onrender.com
+```
+
+GitHub ActionsのCDワークフローは、`main` のCI成功後にRender Deploy Hookを呼び出します。Render側のAuto-Deployは `Off` とし、GitHub Actions CD経由に一本化しています。
+
+必要なGitHub Repository Secretは次のとおりです。
+
+```text
+RENDER_DEPLOY_HOOK_URL=<RenderのDeploy Hook URL>
+```
+
+手動でCDを実行する場合は、GitHubの `Actions` タブから `CD` ワークフローを選び、`Run workflow` を実行します。
+
+## 移行で整理した主な内容
+
+このプロジェクトでは、従来型のServlet / JSPアプリケーションを、段階的に現在の構成へ移行しました。
+
+- Spring Boot化
+- Spring Securityによる認証・認可の一元管理
+- FlywayによるDBマイグレーション管理
+- Spring Data JDBCへの移行
+- Service層の導入
+- React + REST APIへの画面移行
+- JSPホストの廃止とSpring MVC Controller生成HTMLへの移行
+- GitHub Actions CIの構築
+- GitHub Actions CD + Render Deploy Hookの構築
+- Render + Supabase PostgreSQLによるmain環境の運用整理
 
 ## 工夫した点
 
-### Reactへの段階的移行
+### 段階的なReact移行
 
-既存のServlet / JSPアプリケーションを一度に作り直すのではなく、REST APIを追加しながらReactへ段階的に移行しています。既存資産を活かしつつ、画面単位で置き換えられる構成にしています。
+既存のServlet / JSPアプリケーションを一度に作り直すのではなく、REST APIを追加しながら画面単位でReactへ移行しました。既存機能を壊しにくくしながら、徐々にフロントエンドとバックエンドの責務を分離しています。
 
 ### セキュリティ
 
@@ -211,9 +271,9 @@ PostgreSQL / H2
 - 認証成功時にセッションIDを変更
 - 更新時の楽観ロックで同時編集による競合を防止
 
-### データベース設計
+### データ整合性
 
-公開環境ではPostgreSQLを使用し、外部キー制約、UNIQUE制約、NOT NULL制約でデータ整合性を保証します。H2はFlyway適用済みスキーマで特性テストに利用します。
+PostgreSQLでは、外部キー制約、UNIQUE制約、NOT NULL制約でデータ整合性を保証します。スキーマはFlywayで管理し、環境差分が出にくいようにしています。
 
 ### 保守性
 
@@ -223,318 +283,32 @@ PostgreSQL / H2
 - Spring Data JDBCにより基本CRUDとトランザクションをSpring管理へ移行
 - 移行意図が後から追えるよう、主要ファイルに役割・処理ブロックのコメントを追加
 
-## 今後の改善予定
+## 現段階の状態
 
-- 残りJSP互換画面の整理
-- CI/CDの継続改善
-- 移行用の互換DAO / Logicブリッジを段階的に縮小
+現段階では、ミニSNSとしての基本機能、React画面、認証、DBマイグレーション、CI/CD、Renderデプロイまで一通り動作する状態です。
+
+学習・ポートフォリオ用途のWebアプリとしては、いったん完成とみなせる段階です。
+
+一方で、実運用サービスとして長期的に育てる場合は、次の改善余地があります。
+
+## 今後検討したいこと
+
+- 旧互換用Servlet / DAO / ブリッジ構成のさらなる整理
+- APIをServletからSpring MVC Controllerへ移行
+- 画面UI/UXの改善
+- レスポンシブデザインの調整
+- 入力バリデーションとエラーメッセージの改善
+- テストデータ投入手順の整備
+- E2Eテストの導入
 - Service層とReactコンポーネントのテスト拡充
+- ログ出力と監視の改善
+- 独自ドメイン設定
+- RenderサービスURLの正式名称化
+- 旧public環境と旧Supabase DBの整理
+- GitHub Actions CD後のデプロイ成功確認の自動化
 
 ## 学習を通して
 
-本プロジェクトでは、従来型のJava Webアプリケーションをベースに、React、REST API、Docker、PostgreSQL、Spring Security、Flyway、Spring Data JDBC、Service層を組み合わせながら、段階的にモダンな構成へ移行しています。
+本プロジェクトでは、従来型のJava Webアプリケーションをベースに、React、REST API、Docker、PostgreSQL、Spring Security、Flyway、Spring Data JDBC、Service層を組み合わせながら、段階的にモダンな構成へ移行しました。
 
-機能追加だけでなく、保守性、セキュリティ、データ整合性、CIで検証できる設計を重視しています。
-
-## Phase15 登録画面の旧JSP完了導線を整理
-
-Phase15では、ユーザー登録画面がReact + `/api/register` に移行済みであることを前提に、旧JSPフォーム互換として残っていた登録POST処理と完了JSPを整理しました。
-
-- `/Register` ServletはReactホストJSPを表示するGET専用の入口に縮小
-- 旧JSPフォームPOST用の登録処理を `/Register` から削除
-- 登録完了表示はReact側で行うため、`registerResult.jsp` を削除
-- 登録処理の正式な入口を `/api/register` に一本化
-
-## Phase16 ログイン・登録の旧Logic互換クラスを整理
-
-Phase16では、ログインがSpring Security、登録がReact + `/api/register` に移行済みであることを前提に、旧Servlet/JSP時代の薄いLogic互換クラスを削除しました。
-
-- `LoginLogic` を削除し、認証判定の責務を `UserService.authenticate` に集約
-- `RegisterUserLogic` を削除し、登録処理の責務を `UserService.register` と `/api/register` に集約
-- `UserService` のコメントを現在の責務に合わせて更新
-
-## Phase17 未使用JSP互換ファイルを整理
-
-Phase17では、ログイン画面がReactホスト化され、ログイン成功/失敗/ログアウト後の遷移もSpring Security + Reactログイン画面に一本化済みであることを前提に、参照されなくなったJSPを削除しました。
-
-- `loginResult.jsp` を削除
-- `logout.jsp` を削除
-- どこからもincludeされていなかった `footer.jsp` を削除
-- 残るJSPはReactホストとして使う画面に絞り込み
-
-## Phase18 メイン画面の旧POST投稿導線を整理
-
-Phase18では、投稿作成がReact + `/api/mutters` に一本化済みであることを前提に、旧JSPフォーム互換として残っていた `/Main` のPOST投稿処理を削除しました。
-
-- `Main` ServletはReactホストJSPを表示するGET専用の入口に縮小
-- 旧POST投稿処理で使っていた `PostMutterLogic` を削除
-- `MutterService` から旧Logic互換用のboolean戻り値メソッドを削除
-- 投稿作成の正式な入口を `/api/mutters` と `MutterService.createAndReturn` に一本化
-
-## Phase19 プロフィール旧POST互換とソーシャル系Logicを整理
-
-Phase19では、プロフィール表示・自己紹介更新がReact + `/api/profile` に移行済みであることを前提に、旧JSPフォーム互換のプロフィールPOST処理を削除しました。あわせて、いいね・フォロー処理で残っていた薄いLogicラッパーを撤去し、Servletから `SocialService` を直接利用する構成へ整理しました。
-
-- `Profile` ServletはReactホストJSPを表示するGET専用の入口に縮小
-- `Profile#doPost` の旧JSPフォーム互換処理を削除
-- `FollowUserLogic` / `LikeMutterLogic` を削除
-- `FollowUser` / `LikeMutter` Servletから `SocialService` を直接呼ぶよう変更
-- 削除したLogicラッパー専用の単体テストを削除
-
-## Phase20 いいね・フォロー操作を正式APIへ移行
-
-Phase20では、React側から呼び出していた旧Servlet名のURL `/LikeMutter` と `/FollowUser` を廃止し、リソース指向のAPIへ移行しました。
-
-- 投稿いいね切り替えを `POST /api/mutters/{id}/like` へ統合
-- フォロー切り替えを `POST /api/users/{id}/follow` として追加
-- ReactのAPIクライアントを新URLへ変更
-- 旧 `LikeMutter` / `FollowUser` Servletを削除
-- Spring SecurityのJSONエラー判定を `/api/` 配下に一本化
-- 新しいフォローAPIの特性テストを追加
-
-## Phase21 画面ホストServletをSpring MVC Controllerへ移行
-
-Phase21では、ReactホストJSPへforwardするだけになっていた画面入口ServletをSpring MVC Controllerへ移行しました。JSPはまだReactをマウントするホストとして残しつつ、URLルーティングと画面入口の責務をSpring Boot側へ集約しています。
-
-- `PageHostController` を追加
-- `/Main` `/Register` `/Profile` `/FollowerList` `/FollowingList` の画面入口をController化
-- 旧画面ホストServlet `Main` / `Register` / `Profile` / `FollowerList` / `FollowingList` を削除
-- プロフィール・フォロー一覧で必要な対象ユーザー検証をController側に集約
-- React + JSON APIへ移行済みの画面処理と、ホストJSP表示の責務を分離
-
-## Phase22 JSPホストを廃止しController生成HTMLへ移行
-
-Phase22では、Reactをマウントするためだけに残っていたJSPホストを廃止し、Spring MVC Controllerが最小HTMLを直接返す構成へ移行しました。これにより、旧JSP画面のReact統合は「JSPをReactホストとして使う段階」から一歩進み、Spring Bootが画面入口とReact成果物配信を担う形になります。
-
-- `index.jsp` と `WEB-INF/jsp` 配下のReactホストJSPを削除
-- `PageHostController` で共通ReactホストHTMLを生成
-- 各画面に必要な `data-*` 属性とCSRFトークンをControllerで埋め込み
-- JSP実行に必要だった Jasper / JSTL 依存を削除
-- ReactエントリーポイントとAPIコメントをController生成HTML前提へ更新
-- 画面入口Controllerの結合テストをJSP forward確認からHTML/data属性確認へ更新
-
-## Phase23 CD前のデプロイ準備を整備
-
-Phase23では、CD構築へ進む前に、本番環境で起動確認しやすい設定とドキュメントを整備しました。
-
-- `/health` を追加し、Renderなどの外部サービスが未ログインで起動状態を確認できるように変更
-- Spring Securityで `/health` を公開エンドポイントとして許可
-- `SERVER_SERVLET_CONTEXT_PATH` と `SERVER_FORWARD_HEADERS_STRATEGY` を環境変数で調整可能に変更
-- Render Blueprint `render.yaml` を追加し、必要な環境変数とヘルスチェックパスを明文化
-- ヘルスチェックの結合テストを追加
-
-### CD構築前の本番設定メモ
-
-Renderなどの本番環境では、最低限次の環境変数を設定します。
-
-```text
-DB_URL=jdbc:postgresql://<host>:<port>/<database>
-DB_USER=<database-user>
-DB_PASSWORD=<database-password>
-DB_MAXIMUM_POOL_SIZE=10
-FLYWAY_BASELINE_ON_MIGRATE=false
-SERVER_SERVLET_CONTEXT_PATH=/dokoTsubu
-SERVER_FORWARD_HEADERS_STRATEGY=native
-```
-
-既存DBを初めてFlyway管理へ移す場合だけ、事前確認後の初回起動で `FLYWAY_BASELINE_ON_MIGRATE=true` を使用します。以降は `false` に戻します。
-
-デプロイ後の起動確認は次のURLで行います。
-
-```text
-https://<service-host>/dokoTsubu/health
-```
-
-## Phase24 Render向けCDワークフローを追加
-
-Phase24では、GitHub ActionsのCI成功後にRender Deploy Hookを呼び出すCDワークフローを追加しました。
-
-- `.github/workflows/cd.yml` を追加
-- `main` ブランチのCIが成功した場合のみ、Renderのデプロイを起動
-- 手動実行用に `workflow_dispatch` も用意
-- Deploy Hook URLは機密情報のため、GitHub Repository Secret `RENDER_DEPLOY_HOOK_URL` で管理
-- CDワークフロー内にも、なぜCIとCDの責務を分けるかをコメントで明記
-
-### CD利用前にGitHubへ登録するSecret
-
-GitHubの対象リポジトリで、次のRepository Secretを登録します。
-
-```text
-RENDER_DEPLOY_HOOK_URL=<RenderのDeploy Hook URL>
-```
-
-この値はRender Dashboardで対象Web ServiceのDeploy Hookを作成して取得します。
-Secret登録後は、`main` へのマージでCIが成功すると、CDワークフローがRenderへデプロイ開始を通知します。
-
-デプロイ結果はGitHub ActionsではなくRender Dashboard側で確認します。Phase23で追加した `/dokoTsubu/health` がヘルスチェックに使われます。
-
-## Phase25 main-staging確認と本番切替準備を整理
-
-Phase25では、`main` ブランチ版を既存 `public` 本番環境へ直接切り替える前に、別サービス・別DBで検証した結果と、本番切替時の作業順序を整理しました。
-
-### main-staging確認済み事項
-
-次の構成で、`main` ブランチ版のステージング環境を作成して確認しました。
-
-```text
-Render service: dokoTsubu-main-staging
-Render plan: Starter
-Render branch: main
-Runtime: Docker
-Database: Supabase PostgreSQL staging project
-Context path: /dokoTsubu
-Health check: /dokoTsubu/health
-```
-
-確認済みの内容は次のとおりです。
-
-- Render上でDockerビルドとSpring Boot起動が成功
-- Supabase PostgreSQLのSession pooler経由でDB接続が成功
-- Flywayが `flyway_schema_history` を作成し、`V1__initial_schema.sql` を適用
-- `users` / `mutters` / `mutter_likes` / `follows` が作成されることを確認
-- `/dokoTsubu/health` が `UP` を返すことを確認
-- ユーザー登録、ログイン、投稿、検索、編集、いいね、フォローの基本動作を確認
-- GitHub Actionsの `CD` ワークフローからRender Deploy Hookを呼び出し、デプロイが開始されることを確認
-
-### 本番切替前の前提
-
-既存の `public` ブランチ本番環境と `main` ブランチ版は構成差分が大きいため、Renderの参照ブランチだけをいきなり切り替えない方針にします。
-
-本番切替前に、少なくとも次を完了してから作業します。
-
-- 現行 `public` 本番サービスのURL、環境変数、DB接続先、Render設定を控える
-- 現行Supabase本番DBのバックアップ、または復元可能な退避を用意する
-- `db/migration/postgresql_baseline_preflight.sql` を現行DBに対して実行し、不整合がないことを確認する
-- main-stagingで画面操作とCDが通ることを再確認する
-- 切替作業中に問題が出た場合の戻し先を決めておく
-
-### 本番DBを使う場合の注意
-
-新規DBでは `FLYWAY_BASELINE_ON_MIGRATE=false` のままFlywayが初期スキーマを作成します。
-
-一方、既存 `public` 本番DBを `main` 版で使う場合は、既にテーブルが存在するため、初回だけ次の設定が必要になる可能性があります。
-
-```text
-FLYWAY_BASELINE_ON_MIGRATE=true
-```
-
-ただし、この設定は「既存DBのスキーマが `V1__initial_schema.sql` と互換である」ことを確認してから使います。初回起動とFlyway履歴作成に成功したら、以降は次に戻します。
-
-```text
-FLYWAY_BASELINE_ON_MIGRATE=false
-```
-
-### 本番切替手順案
-
-本番切替は、次の順序で進めます。
-
-1. main-stagingで最新 `main` のCDを手動実行し、`/dokoTsubu/health` と主要画面を確認
-2. 現行 `public` 本番DBをバックアップ
-3. 現行DBに対して `postgresql_baseline_preflight.sql` を実行し、結果を確認
-4. 本番用Renderサービスを `main` ブランチ、Docker、Starter以上のプランで用意
-5. 本番用Renderサービスに本番DB向け環境変数を設定
-6. 初回だけ必要に応じて `FLYWAY_BASELINE_ON_MIGRATE=true` を設定
-7. 本番用Renderサービスを手動デプロイ
-8. `/dokoTsubu/health`、ログイン、投稿、検索、プロフィール、いいね、フォローを確認
-9. 問題なければ `FLYWAY_BASELINE_ON_MIGRATE=false` へ戻して再デプロイ
-10. 公開URLまたは利用導線をmain版サービスへ切り替える
-
-### ロールバック方針
-
-切替中に問題が出た場合は、原因調査より先に利用者影響を戻すことを優先します。
-
-- 公開導線を旧 `public` 本番サービスへ戻す
-- 旧本番DBを変更していない場合は、そのまま旧サービスを継続利用する
-- 旧本番DBへFlyway履歴やデータ変更が入った場合は、バックアップからの復元可否を確認する
-- Renderのmain版サービスは停止または公開導線から外し、ログを保存してから修正する
-
-この段階では、`main` 版をすぐ本番化することよりも、「安全に切り替えられる状態を確認しながら前進する」ことを優先します。
-
-## Phase26 main環境を正式運用対象として整理
-
-Phase26では、既存 `public` ブランチ環境を練習用として扱い、DBデータを `main` 版へ移行しない方針に整理しました。
-
-### 運用方針
-
-今後の正式な運用対象は、`main` ブランチをデプロイしているRenderサービスと、そのサービスに接続しているSupabase PostgreSQLとします。
-
-```text
-正式運用対象:
-- Render service: dokoTsubu-main
-- Public URL: https://dokotsubu-main-staging.onrender.com
-- Branch: main
-- Database: main用に新規作成したSupabase PostgreSQL
-- Deploy: GitHub Actions CD → Render Deploy Hook
-```
-
-既存 `public` ブランチ環境と、そのSupabase DBは練習用として扱います。
-
-```text
-旧環境:
-- publicブランチ
-- publicブランチに接続していたRenderサービス
-- publicブランチに接続していたSupabase PostgreSQL
-```
-
-旧環境のDB内容は引き継ぎません。そのため、Phase25で整理した「既存本番DBをFlywayでbaseline化する」作業は、現時点では実施不要です。
-
-### 現在のmain DB設定
-
-main用DBは新規DBとしてFlyway管理を開始済みのため、環境変数は次の方針を維持します。
-
-```text
-FLYWAY_BASELINE_ON_MIGRATE=false
-```
-
-`flyway_schema_history` は既に作成済みで、`V1__initial_schema.sql` が適用されています。
-
-### 旧public環境の扱い
-
-旧public環境は、すぐに削除せず、しばらく比較・退避用として残しておくこともできます。
-
-整理する場合は、次の順で進めます。
-
-1. main環境で主要操作が安定していることを確認
-2. public環境を参照しているURLや導線が残っていないことを確認
-3. Renderの旧publicサービスを停止、または削除
-4. Supabaseの旧public DBを停止、または削除
-5. `public` ブランチは履歴として残すか、不要であれば別途整理する
-
-### 今後のデプロイ運用
-
-今後の更新は、次の流れでmain環境へ反映します。
-
-```text
-feature branch
-→ Pull Request
-→ mainへマージ
-→ GitHub Actions CI
-→ GitHub Actions CD
-→ Render Deploy Hook
-→ dokoTsubu-mainへデプロイ
-```
-
-Render側のAuto-Deployは `Off` とし、GitHub Actions CD経由に一本化します。これにより、GitHub上のCI成功を確認してからRenderデプロイを開始できます。
-
-### Renderサービス名と公開URL
-
-Renderのサービス表示名は、正式運用対象であることが分かるように `dokoTsubu-main` へ整理済みです。
-
-ただし、Renderの既存サブドメインは継続利用するため、公開URLは次のまま運用します。
-
-```text
-https://dokotsubu-main-staging.onrender.com
-```
-
-サービス名とURLが完全には一致しませんが、既存URLを維持することで、Renderサービスの作り直しや外部導線の再設定を避けます。
-
-将来、独自ドメインや新しいRenderサービスへ切り替える場合は、GitHub Repository Secret `RENDER_DEPLOY_HOOK_URL` が対象サービスのDeploy Hook URLを指していることも確認します。
-
-## Phase27 自動更新中表示のレイアウト揺れを改善
-
-Phase27では、メイン画面の5秒ごとの自動更新時に「最新の投稿を確認しています...」が投稿フォーム上部へ出たり消えたりして、画面全体が上下に動いて見える問題を改善しました。
-
-- 自動更新中の表示を投稿フォーム上部から、`つぶやき一覧` 見出し横へ移動
-- 表示領域を常に確保し、`visibility` で表示/非表示を切り替えることでレイアウトの上下揺れを防止
-- 手動更新ボタンの近くに状態表示を置き、どの一覧操作に関する表示か分かりやすく変更
-- 小さい画面では見出し操作部を縦並びにし、表示崩れを避ける
+機能追加だけでなく、保守性、セキュリティ、データ整合性、CI/CDで検証できる設計を重視しています。
