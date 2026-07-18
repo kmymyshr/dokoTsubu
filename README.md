@@ -366,3 +366,85 @@ RENDER_DEPLOY_HOOK_URL=<RenderのDeploy Hook URL>
 Secret登録後は、`main` へのマージでCIが成功すると、CDワークフローがRenderへデプロイ開始を通知します。
 
 デプロイ結果はGitHub ActionsではなくRender Dashboard側で確認します。Phase23で追加した `/dokoTsubu/health` がヘルスチェックに使われます。
+
+## Phase25 main-staging確認と本番切替準備を整理
+
+Phase25では、`main` ブランチ版を既存 `public` 本番環境へ直接切り替える前に、別サービス・別DBで検証した結果と、本番切替時の作業順序を整理しました。
+
+### main-staging確認済み事項
+
+次の構成で、`main` ブランチ版のステージング環境を作成して確認しました。
+
+```text
+Render service: dokoTsubu-main-staging
+Render plan: Starter
+Render branch: main
+Runtime: Docker
+Database: Supabase PostgreSQL staging project
+Context path: /dokoTsubu
+Health check: /dokoTsubu/health
+```
+
+確認済みの内容は次のとおりです。
+
+- Render上でDockerビルドとSpring Boot起動が成功
+- Supabase PostgreSQLのSession pooler経由でDB接続が成功
+- Flywayが `flyway_schema_history` を作成し、`V1__initial_schema.sql` を適用
+- `users` / `mutters` / `mutter_likes` / `follows` が作成されることを確認
+- `/dokoTsubu/health` が `UP` を返すことを確認
+- ユーザー登録、ログイン、投稿、検索、編集、いいね、フォローの基本動作を確認
+- GitHub Actionsの `CD` ワークフローからRender Deploy Hookを呼び出し、デプロイが開始されることを確認
+
+### 本番切替前の前提
+
+既存の `public` ブランチ本番環境と `main` ブランチ版は構成差分が大きいため、Renderの参照ブランチだけをいきなり切り替えない方針にします。
+
+本番切替前に、少なくとも次を完了してから作業します。
+
+- 現行 `public` 本番サービスのURL、環境変数、DB接続先、Render設定を控える
+- 現行Supabase本番DBのバックアップ、または復元可能な退避を用意する
+- `db/migration/postgresql_baseline_preflight.sql` を現行DBに対して実行し、不整合がないことを確認する
+- main-stagingで画面操作とCDが通ることを再確認する
+- 切替作業中に問題が出た場合の戻し先を決めておく
+
+### 本番DBを使う場合の注意
+
+新規DBでは `FLYWAY_BASELINE_ON_MIGRATE=false` のままFlywayが初期スキーマを作成します。
+
+一方、既存 `public` 本番DBを `main` 版で使う場合は、既にテーブルが存在するため、初回だけ次の設定が必要になる可能性があります。
+
+```text
+FLYWAY_BASELINE_ON_MIGRATE=true
+```
+
+ただし、この設定は「既存DBのスキーマが `V1__initial_schema.sql` と互換である」ことを確認してから使います。初回起動とFlyway履歴作成に成功したら、以降は次に戻します。
+
+```text
+FLYWAY_BASELINE_ON_MIGRATE=false
+```
+
+### 本番切替手順案
+
+本番切替は、次の順序で進めます。
+
+1. main-stagingで最新 `main` のCDを手動実行し、`/dokoTsubu/health` と主要画面を確認
+2. 現行 `public` 本番DBをバックアップ
+3. 現行DBに対して `postgresql_baseline_preflight.sql` を実行し、結果を確認
+4. 本番用Renderサービスを `main` ブランチ、Docker、Starter以上のプランで用意
+5. 本番用Renderサービスに本番DB向け環境変数を設定
+6. 初回だけ必要に応じて `FLYWAY_BASELINE_ON_MIGRATE=true` を設定
+7. 本番用Renderサービスを手動デプロイ
+8. `/dokoTsubu/health`、ログイン、投稿、検索、プロフィール、いいね、フォローを確認
+9. 問題なければ `FLYWAY_BASELINE_ON_MIGRATE=false` へ戻して再デプロイ
+10. 公開URLまたは利用導線をmain版サービスへ切り替える
+
+### ロールバック方針
+
+切替中に問題が出た場合は、原因調査より先に利用者影響を戻すことを優先します。
+
+- 公開導線を旧 `public` 本番サービスへ戻す
+- 旧本番DBを変更していない場合は、そのまま旧サービスを継続利用する
+- 旧本番DBへFlyway履歴やデータ変更が入った場合は、バックアップからの復元可否を確認する
+- Renderのmain版サービスは停止または公開導線から外し、ログを保存してから修正する
+
+この段階では、`main` 版をすぐ本番化することよりも、「安全に切り替えられる状態を確認しながら前進する」ことを優先します。
