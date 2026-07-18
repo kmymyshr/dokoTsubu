@@ -290,3 +290,13 @@ Phase20では、React側から呼び出していた旧Servlet名のURL `/LikeMut
 - 旧 `LikeMutter` / `FollowUser` Servletを削除
 - Spring SecurityのJSONエラー判定を `/api/` 配下に一本化
 - 新しいフォローAPIの特性テストを追加
+
+## Phase21 画面ホストServletをSpring MVC Controllerへ移行
+
+Phase21では、ReactホストJSPへforwardするだけになっていた画面入口ServletをSpring MVC Controllerへ移行しました。JSPはまだReactをマウントするホストとして残しつつ、URLルーティングと画面入口の責務をSpring Boot側へ集約しています。
+
+- `PageHostController` を追加
+- `/Main` `/Register` `/Profile` `/FollowerList` `/FollowingList` の画面入口をController化
+- 旧画面ホストServlet `Main` / `Register` / `Profile` / `FollowerList` / `FollowingList` を削除
+- プロフィール・フォロー一覧で必要な対象ユーザー検証をController側に集約
+- React + JSON APIへ移行済みの画面処理と、ホストJSP表示の責務を分離
