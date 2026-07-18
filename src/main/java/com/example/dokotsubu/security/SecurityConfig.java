@@ -182,10 +182,10 @@ public class SecurityConfig {
         response.sendError(HttpServletResponse.SC_FORBIDDEN);
     }
 
-    /** API/非同期ServletはJSONエラーを返す対象として扱う。 */
+    /** APIエンドポイントはJSONエラーを返す対象として扱う。Phase20以降、旧Servlet名の例外扱いは不要。 */
     private boolean isJsonEndpoint(HttpServletRequest request) {
         String path = request.getRequestURI().substring(request.getContextPath().length());
-        return path.startsWith("/api/") || path.equals("/FollowUser") || path.equals("/LikeMutter");
+        return path.startsWith("/api/");
     }
 
     /** APIで共通利用するエラーレスポンス書き込み処理。 */

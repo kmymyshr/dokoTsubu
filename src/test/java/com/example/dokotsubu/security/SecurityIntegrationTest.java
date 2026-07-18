@@ -64,7 +64,7 @@ class SecurityIntegrationTest {
 
     @Test
     void unsafeJsonRequestWithoutCsrfTokenIsRejected() throws Exception {
-        mockMvc.perform(post("/FollowUser").with(user("alice")))
+        mockMvc.perform(post("/api/users/2/follow").with(user("alice")))
                 .andExpect(status().isForbidden())
                 .andExpect(content().contentTypeCompatibleWith("application/json"))
                 .andExpect(content().string(containsString("\"code\":\"CSRF_TOKEN_INVALID\"")));
@@ -72,7 +72,7 @@ class SecurityIntegrationTest {
 
     @Test
     void unsafeJsonRequestReturns401AfterSessionExpires() throws Exception {
-        mockMvc.perform(post("/FollowUser"))
+        mockMvc.perform(post("/api/users/2/follow"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(content().contentTypeCompatibleWith("application/json"))
                 .andExpect(content().string(containsString("\"code\":\"UNAUTHORIZED\"")));

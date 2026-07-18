@@ -122,6 +122,11 @@ public class MutterApiServlet extends HttpServlet {
         if (loginUser == null) {
             return;
         }
+        // Phase20: 旧 /LikeMutter のいいね切り替えを、投稿APIのサブリソースへ統合する。
+        if (isLikeResource(request)) {
+            toggleLike(request, response, loginUser);
+            return;
+        }
         if (hasResourceId(request)) {
             writeError(response, HttpServletResponse.SC_METHOD_NOT_ALLOWED,
                     "METHOD_NOT_ALLOWED", "個別リソースにPOSTは使用できません");
@@ -144,6 +149,38 @@ public class MutterApiServlet extends HttpServlet {
         response.setHeader("Location", request.getContextPath() + "/api/mutters/" + created.getId());
         // 新規作成直後は、いいね/フォロー状態がまだ付かないためfalse/0で返す。
         writeJson(response, HttpServletResponse.SC_CREATED, MutterResponse.from(created, 0, false, false));
+    }
+
+    /**
+     * 投稿に対するいいね状態を切り替える。
+     *
+     * <p>Phase20で旧 {@code /LikeMutter} から移した処理。投稿に従属する操作を
+     * {@code /api/mutters/{id}/like} に集約し、React側のAPI境界を分かりやすくする。</p>
+     */
+    private void toggleLike(HttpServletRequest request, HttpServletResponse response, User loginUser)
+            throws IOException {
+        Integer id = parseLikeResourceId(request, response);
+        if (id == null) {
+            return;
+        }
+
+        Mutter target = ApplicationServiceBridge.mutters().findById(id);
+        if (target == null) {
+            writeError(response, HttpServletResponse.SC_NOT_FOUND,
+                    "MUTTER_NOT_FOUND", "指定された投稿は存在しません");
+            return;
+        }
+        if (target.getUserId() == loginUser.getId()) {
+            writeError(response, HttpServletResponse.SC_BAD_REQUEST,
+                    "CANNOT_LIKE_OWN_MUTTER", "自分の投稿にはいいねできません");
+            return;
+        }
+
+        SocialService social = ApplicationServiceBridge.social();
+        boolean liked = social.toggleLike(id, loginUser.getId());
+        int count = social.countLikes(id);
+        writeJson(response, HttpServletResponse.SC_OK,
+                java.util.Map.of("liked", liked, "count", count));
     }
 
     /**
@@ -305,6 +342,29 @@ public class MutterApiServlet extends HttpServlet {
         }
     }
 
+    /** `/api/mutters/{id}/like` の投稿ID部分を安全に取り出す。 */
+    private Integer parseLikeResourceId(HttpServletRequest request, HttpServletResponse response)
+            throws IOException {
+        String path = request.getPathInfo();
+        if (path == null || !path.matches("/\\d+/like/?")) {
+            writeError(response, HttpServletResponse.SC_NOT_FOUND,
+                    "RESOURCE_NOT_FOUND", "指定されたAPIリソースは存在しません");
+            return null;
+        }
+        String idPart = path.replaceFirst("^/", "").replaceFirst("/like/?$", "");
+        try {
+            int id = Integer.parseInt(idPart);
+            if (id <= 0) {
+                throw new NumberFormatException();
+            }
+            return id;
+        } catch (NumberFormatException e) {
+            writeError(response, HttpServletResponse.SC_BAD_REQUEST,
+                    "INVALID_ID", "IDには正の整数を指定してください");
+            return null;
+        }
+    }
+
     /** 更新/削除のようにID必須のAPIで、ID未指定を分かりやすく400にする。 */
     private Integer requireResourceId(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
@@ -320,6 +380,12 @@ public class MutterApiServlet extends HttpServlet {
     private boolean hasResourceId(HttpServletRequest request) {
         String path = request.getPathInfo();
         return path != null && !path.equals("/") && !path.isBlank();
+    }
+
+    /** Phase20で追加した、投稿いいね用サブリソースかどうかを判定する。 */
+    private boolean isLikeResource(HttpServletRequest request) {
+        String path = request.getPathInfo();
+        return path != null && path.matches("/\\d+/like/?");
     }
 
     /** cursor/limitのような任意の正整数パラメータを安全に読む。 */
