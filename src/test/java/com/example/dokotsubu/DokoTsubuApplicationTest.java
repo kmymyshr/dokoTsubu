@@ -10,6 +10,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -37,6 +38,20 @@ class DokoTsubuApplicationTest {
         mockMvc.perform(get("/"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/index.jsp"));
+    }
+
+    @Test
+    void healthEndpointIsPublicForDeploymentChecks() throws Exception {
+        // Phase23: 外部サービスのヘルスチェックが認証なしで成功することを固定する。
+        mockMvc.perform(get("/health"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith("application/json"))
+                .andExpect(content().json("""
+                        {
+                          "status": "UP",
+                          "application": "dokoTsubu"
+                        }
+                        """));
     }
 
     @Test

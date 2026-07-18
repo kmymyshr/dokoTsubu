@@ -22,8 +22,11 @@ spring:
 
 server:
   port: ${PORT:8080}
+  # Phase23: Renderなどのリバースプロキシ配下でHTTPS/Host情報を正しく扱うため、環境変数で調整できるようにする。
+  forward-headers-strategy: ${SERVER_FORWARD_HEADERS_STRATEGY:native}
   servlet:
-    context-path: /dokoTsubu
+    # Phase23: ローカルは従来どおり /dokoTsubu、デプロイ先では必要に応じてルート配信へ切り替えられるようにする。
+    context-path: ${SERVER_SERVLET_CONTEXT_PATH:/dokoTsubu}
     session:
       cookie:
         http-only: true
