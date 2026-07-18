@@ -70,6 +70,97 @@ PostgreSQL / H2
 
 初期のServlet / JSP構成から段階的に移行した経緯があるため、一部に互換用のServletやブリッジ構成は残っています。ただし、主要な画面表示・認証・API・Service・DBアクセスはSpring Boot中心の構成へ整理済みです。
 
+## 技術構成図
+
+```mermaid
+flowchart LR
+  Browser["Browser"]
+  React["React 19 / Vite"]
+  Api["REST API / Spring MVC Controller"]
+  Security["Spring Security"]
+  Service["Service Layer"]
+  Repository["Spring Data JDBC Repository"]
+  Database[("PostgreSQL / H2")]
+  Flyway["Flyway Migration"]
+
+  Browser --> React
+  React --> Api
+  Api --> Security
+  Api --> Service
+  Service --> Repository
+  Repository --> Database
+  Flyway --> Database
+```
+
+Reactが画面表示とユーザー操作を担当し、バックエンドはSpring Boot上のAPI、Security、Service、Repositoryに責務を分けています。DBスキーマはFlywayで管理します。
+
+## システム構成図
+
+```mermaid
+flowchart TD
+  User["User"]
+  Browser["Browser"]
+  Render["Render Web Service<br/>dokoTsubu-main"]
+  App["Docker Container<br/>Spring Boot + React"]
+  Supabase[("Supabase PostgreSQL")]
+  GitHub["GitHub Repository"]
+  Actions["GitHub Actions<br/>CI / CD"]
+  Hook["Render Deploy Hook"]
+
+  User --> Browser
+  Browser --> Render
+  Render --> App
+  App --> Supabase
+
+  GitHub --> Actions
+  Actions --> Hook
+  Hook --> Render
+```
+
+`main` ブランチへのマージ後、GitHub ActionsでCIを実行し、成功後にCDワークフローからRender Deploy Hookを呼び出します。Render上ではDockerコンテナとしてSpring Bootアプリを起動し、Supabase PostgreSQLへ接続します。
+
+## ER図
+
+```mermaid
+erDiagram
+  users {
+    int id PK
+    varchar name UK
+    varchar pass
+    varchar bio
+  }
+
+  mutters {
+    int id PK
+    int user_id FK
+    varchar text
+    int version
+    timestamp created_at
+  }
+
+  mutter_likes {
+    int id PK
+    int mutter_id FK
+    int user_id FK
+    timestamp created_at
+  }
+
+  follows {
+    int id PK
+    int follower_id FK
+    int followee_id FK
+    timestamp created_at
+  }
+
+  users ||--o{ mutters : posts
+  users ||--o{ mutter_likes : likes
+  mutters ||--o{ mutter_likes : liked_by
+  users ||--o{ follows : follows
+  users ||--o{ follows : followed_by
+```
+
+`mutter_likes` は `(mutter_id, user_id)` にUNIQUE制約を持ち、同じユーザーが同じ投稿へ重複していいねできないようにしています。`follows` は `(follower_id, followee_id)` にUNIQUE制約を持ち、同じフォロー関係の重複を防いでいます。
+
 ## ディレクトリ構成
 
 ```text
