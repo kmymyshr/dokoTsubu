@@ -448,3 +448,81 @@ FLYWAY_BASELINE_ON_MIGRATE=false
 - Renderのmain版サービスは停止または公開導線から外し、ログを保存してから修正する
 
 この段階では、`main` 版をすぐ本番化することよりも、「安全に切り替えられる状態を確認しながら前進する」ことを優先します。
+
+## Phase26 main環境を正式運用対象として整理
+
+Phase26では、既存 `public` ブランチ環境を練習用として扱い、DBデータを `main` 版へ移行しない方針に整理しました。
+
+### 運用方針
+
+今後の正式な運用対象は、`main` ブランチをデプロイしているRenderサービスと、そのサービスに接続しているSupabase PostgreSQLとします。
+
+```text
+正式運用対象:
+- Render service: dokoTsubu-main-staging
+- Branch: main
+- Database: main用に新規作成したSupabase PostgreSQL
+- Deploy: GitHub Actions CD → Render Deploy Hook
+```
+
+既存 `public` ブランチ環境と、そのSupabase DBは練習用として扱います。
+
+```text
+旧環境:
+- publicブランチ
+- publicブランチに接続していたRenderサービス
+- publicブランチに接続していたSupabase PostgreSQL
+```
+
+旧環境のDB内容は引き継ぎません。そのため、Phase25で整理した「既存本番DBをFlywayでbaseline化する」作業は、現時点では実施不要です。
+
+### 現在のmain DB設定
+
+main用DBは新規DBとしてFlyway管理を開始済みのため、環境変数は次の方針を維持します。
+
+```text
+FLYWAY_BASELINE_ON_MIGRATE=false
+```
+
+`flyway_schema_history` は既に作成済みで、`V1__initial_schema.sql` が適用されています。
+
+### 旧public環境の扱い
+
+旧public環境は、すぐに削除せず、しばらく比較・退避用として残しておくこともできます。
+
+整理する場合は、次の順で進めます。
+
+1. main環境で主要操作が安定していることを確認
+2. public環境を参照しているURLや導線が残っていないことを確認
+3. Renderの旧publicサービスを停止、または削除
+4. Supabaseの旧public DBを停止、または削除
+5. `public` ブランチは履歴として残すか、不要であれば別途整理する
+
+### 今後のデプロイ運用
+
+今後の更新は、次の流れでmain環境へ反映します。
+
+```text
+feature branch
+→ Pull Request
+→ mainへマージ
+→ GitHub Actions CI
+→ GitHub Actions CD
+→ Render Deploy Hook
+→ dokoTsubu-main-stagingへデプロイ
+```
+
+Render側のAuto-Deployは `Off` とし、GitHub Actions CD経由に一本化します。これにより、GitHub上のCI成功を確認してからRenderデプロイを開始できます。
+
+### 名称変更を行う場合
+
+`dokoTsubu-main-staging` を正式名称へ変える場合は、URL変更の影響を確認してから実施します。
+
+候補:
+
+```text
+dokoTsubu-main
+dokoTsubu-production
+```
+
+名称変更またはサービス作り直しを行う場合は、GitHub Repository Secret `RENDER_DEPLOY_HOOK_URL` が新しいRenderサービスのDeploy Hook URLを指していることを確認します。
